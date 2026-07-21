@@ -3,9 +3,10 @@
 --
 -- Deviates from the original architecture doc in a few places:
 --   * No google_calendar_tokens table / OAuth — auth is Supabase
---     magic link only, and calendar support is a hosted ICS feed
---     (households.calendar_feed_token) instead of pulling from
---     Google/Apple. See app/api/feed/[token]/route.ts.
+--     email/password (no Google identity anywhere), and calendar
+--     support is a hosted ICS feed (households.calendar_feed_token)
+--     instead of pulling from Google/Apple. See
+--     app/api/feed/[token]/route.ts.
 --   * pto_transactions.calendar_event_id dropped — nothing external
 --     to link to; the ICS feed is keyed off the transaction's own id.
 --   * households gains calendar_feed_token, peak_window_start/end,
@@ -53,7 +54,7 @@ create table public.profiles (
   created_at timestamptz not null default now()
 );
 
--- Auto-create a profile row whenever a new auth user signs up (magic link)
+-- Auto-create a profile row whenever a new auth user signs up
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
