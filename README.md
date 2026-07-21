@@ -57,6 +57,18 @@ No Supabase URL/redirect configuration is needed for auth — email/password
 sign-in doesn't involve any redirect links, so it works identically in dev
 and prod.
 
+## Admin scripts
+
+There's no self-service "forgot password" flow in the app — adding one
+would mean sending a reset email, reintroducing the exact email
+dependency this build avoids. Instead, resetting a password is a local
+admin action, same pattern as the signup route (uses the Admin API via
+`SUPABASE_SERVICE_ROLE_KEY`, so it only ever runs on your machine):
+
+```bash
+node scripts/reset-password.mjs someone@example.com newpassword123
+```
+
 ## Notes on this build
 
 - **Auth is plain email/password** — no Google OAuth, no magic links. This
