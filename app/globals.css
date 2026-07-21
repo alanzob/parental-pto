@@ -1,26 +1,193 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/*
+ * "CAD Drawing Class" theme: a drafting-table / technical-drawing look.
+ * Deliberately clinical rather than warm — this app mediates emotionally
+ * loaded time-splitting decisions between co-parents, so the visual
+ * language leans on precision (monospace figures, hairline rulings,
+ * blueprint ink, sharp corners) instead of anything soft or friendly.
+ */
+:root {
+  --background: #fafaf8;
+  --foreground: #14171a;
+  --card: #ffffff;
+  --card-foreground: #14171a;
+  --popover: #ffffff;
+  --popover-foreground: #14171a;
+  --primary: #003d82;
+  --primary-foreground: #ffffff;
+  --secondary: #eef0f2;
+  --secondary-foreground: #14171a;
+  --muted: #eef0f2;
+  --muted-foreground: #5a6472;
+  --accent: #e3ecf6;
+  --accent-foreground: #003d82;
+  --destructive: #b3261e;
+  --success: #1a6b3c;
+  --warning: #a35b00;
+  --border: #c7ccd1;
+  --input: #c7ccd1;
+  --ring: #003d82;
+  --chart-1: #003d82;
+  --chart-2: #5a6472;
+  --chart-3: #1a6b3c;
+  --chart-4: #b3261e;
+  --chart-5: #a35b00;
+  --radius: 0.125rem;
+  --grid-line: color-mix(in oklab, var(--foreground) 6%, transparent);
+  --sidebar: #eef0f2;
+  --sidebar-foreground: #14171a;
+  --sidebar-primary: #003d82;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e3ecf6;
+  --sidebar-accent-foreground: #003d82;
+  --sidebar-border: #c7ccd1;
+  --sidebar-ring: #003d82;
+}
+
+.dark {
+  --background: #0f1214;
+  --foreground: #e6e9eb;
+  --card: #171b1e;
+  --card-foreground: #e6e9eb;
+  --popover: #171b1e;
+  --popover-foreground: #e6e9eb;
+  --primary: #4d8fdb;
+  --primary-foreground: #071120;
+  --secondary: #20262a;
+  --secondary-foreground: #e6e9eb;
+  --muted: #20262a;
+  --muted-foreground: #98a3ac;
+  --accent: #1c2b3a;
+  --accent-foreground: #4d8fdb;
+  --destructive: #e0605a;
+  --success: #4caf7d;
+  --warning: #d59a4a;
+  --border: color-mix(in oklab, white 14%, transparent);
+  --input: color-mix(in oklab, white 16%, transparent);
+  --ring: #4d8fdb;
+  --chart-1: #4d8fdb;
+  --chart-2: #98a3ac;
+  --chart-3: #4caf7d;
+  --chart-4: #e0605a;
+  --chart-5: #d59a4a;
+  --grid-line: color-mix(in oklab, white 6%, transparent);
+  --sidebar: #171b1e;
+  --sidebar-foreground: #e6e9eb;
+  --sidebar-primary: #4d8fdb;
+  --sidebar-primary-foreground: #071120;
+  --sidebar-accent: #1c2b3a;
+  --sidebar-accent-foreground: #4d8fdb;
+  --sidebar-border: color-mix(in oklab, white 14%, transparent);
+  --sidebar-ring: #4d8fdb;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  html {
+    @apply font-mono;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Uppercase, tracked-out labels — technical-drawing annotation style. */
+.label-tag {
+  @apply font-mono text-xs tracking-widest uppercase;
+}
+
+/* chud_mode: cosmetic-only sepia theme, toggled client-side, never persisted */
+html.chud-mode {
+  filter: sepia(0.45) saturate(1.1);
+}
+
+/* retro chud mode: demo-only, green-phosphor CRT terminal look, layered on
+ * top of the chud-mode sepia if both happen to be active. */
+html.retro-chud {
+  filter: none;
+  --background: #05100a;
+  --foreground: #39ff14;
+  --card: #071a10;
+  --card-foreground: #39ff14;
+  --popover: #071a10;
+  --popover-foreground: #39ff14;
+  --primary: #39ff14;
+  --primary-foreground: #05100a;
+  --secondary: #0b2416;
+  --secondary-foreground: #39ff14;
+  --muted: #0b2416;
+  --muted-foreground: #2ea312;
+  --accent: #0b2416;
+  --accent-foreground: #39ff14;
+  --border: #1f5c2c;
+  --ring: #39ff14;
+}
+
+html.retro-chud body {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(57, 255, 20, 0.06) 0px, transparent 1px, transparent 2px),
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size:
+    100% 3px,
+    24px 24px,
+    24px 24px;
+  text-shadow: 0 0 2px rgba(57, 255, 20, 0.6);
 }
