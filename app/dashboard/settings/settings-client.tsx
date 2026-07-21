@@ -143,6 +143,10 @@ export function SettingsClient({
       <Card>
         <CardHeader>
           <CardTitle>Your profile</CardTitle>
+          <CardDescription>
+            Your display name is what your partner sees throughout the app —
+            on requests, in the comparative ledger, and on the calendar feed.
+          </CardDescription>
         </CardHeader>
         <form onSubmit={saveProfile}>
           <CardContent className="space-y-1.5">
@@ -165,8 +169,7 @@ export function SettingsClient({
         <CardHeader>
           <CardTitle>Household settings</CardTitle>
           <CardDescription>
-            Peak hours use a 1.5x-style multiplier during a configurable
-            window, resolved in your household&apos;s timezone.
+            These apply to both of you — either partner can change them.
           </CardDescription>
         </CardHeader>
         <form onSubmit={saveHousehold}>
@@ -178,6 +181,9 @@ export function SettingsClient({
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               />
+              <p className="text-muted-foreground text-xs">
+                Shown on your calendar feed and in emails, if you enable them.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="hh-tz">Timezone (IANA name)</Label>
@@ -187,20 +193,13 @@ export function SettingsClient({
                 onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))}
                 placeholder="America/New_York"
               />
+              <p className="text-muted-foreground text-xs">
+                Used to resolve the peak window below — e.g.
+                &quot;America/New_York&quot; or &quot;Europe/London&quot;.
+              </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="overdraft">Overdraft floor (hours, negative)</Label>
-              <Input
-                id="overdraft"
-                type="number"
-                value={form.overdraft_floor}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, overdraft_floor: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="multiplier">Peak multiplier</Label>
+              <Label htmlFor="multiplier">Peak-hour multiplier</Label>
               <Input
                 id="multiplier"
                 type="number"
@@ -210,6 +209,26 @@ export function SettingsClient({
                   setForm((f) => ({ ...f, peak_multiplier: e.target.value }))
                 }
               />
+              <p className="text-muted-foreground text-xs">
+                E.g. 1.5 means a request starting in the peak window below
+                credits 1.5x the hours (a &quot;premium&quot; for asking
+                during the harder overnight/bedtime stretch).
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="overdraft">Overdraft floor (hours)</Label>
+              <Input
+                id="overdraft"
+                type="number"
+                value={form.overdraft_floor}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, overdraft_floor: e.target.value }))
+                }
+              />
+              <p className="text-muted-foreground text-xs">
+                Currently unused by the request-approval flow — reserved for
+                a future spend/redeem feature.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="peak-start">Peak window start</Label>
@@ -232,6 +251,10 @@ export function SettingsClient({
                   setForm((f) => ({ ...f, peak_window_end: e.target.value }))
                 }
               />
+              <p className="text-muted-foreground text-xs">
+                A request &quot;off duty starting&quot; inside this window
+                (e.g. bedtime) gets the multiplier above.
+              </p>
             </div>
 
             <Separator className="sm:col-span-2" />
@@ -240,7 +263,8 @@ export function SettingsClient({
               <div>
                 <Label htmlFor="uilf">Use-it-or-lose-it</Label>
                 <p className="text-muted-foreground text-xs">
-                  Expire unused balance after N days.
+                  Expire banked balance after N days if it isn&apos;t used.
+                  Off by default — banked time never expires.
                 </p>
               </div>
               <Switch
@@ -277,7 +301,9 @@ export function SettingsClient({
         <CardHeader>
           <CardTitle>Invite your partner</CardTitle>
           <CardDescription>
-            Codes expire after 7 days and can only be used once.
+            A household is exactly two people. Generate a one-time code,
+            send them the link, and they&apos;re in — codes expire after 7
+            days and can only be used once.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -337,10 +363,12 @@ export function SettingsClient({
         <CardHeader>
           <CardTitle>Calendar feed</CardTitle>
           <CardDescription>
-            Subscribe from Google Calendar (&quot;Other calendars → From
-            URL&quot;) or Apple Calendar (&quot;File → New Calendar
-            Subscription&quot;). Calendar apps poll infrequently — new
-            entries may take a few hours to show up.
+            A private link — anyone who has it can view your household&apos;s
+            approved time off, so treat it like a password and regenerate it
+            if it ever leaks. Subscribe from Google Calendar
+            (&quot;Other calendars → From URL&quot;) or Apple Calendar
+            (&quot;File → New Calendar Subscription&quot;). Calendar apps
+            poll infrequently — new entries may take a few hours to show up.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
