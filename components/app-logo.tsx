@@ -1,17 +1,18 @@
-"use client";
-
-import { useDemo } from "@/components/demo/demo-provider";
-
-export function RetroLogo() {
-  const { registerLogoClick, retroChudActive } = useDemo();
-
+export function AppLogo({
+  onClick,
+  active,
+  className,
+}: {
+  onClick?: () => void;
+  active?: boolean;
+  className?: string;
+}) {
   return (
     <button
       type="button"
-      onClick={registerLogoClick}
+      onClick={onClick}
       aria-label="Parental PTO"
-      className="focus-visible:ring-ring shrink-0 select-none rounded-sm focus-visible:ring-2 focus-visible:outline-none"
-      title="No parenting data logo"
+      className={`focus-visible:ring-ring shrink-0 select-none rounded-sm focus-visible:ring-2 focus-visible:outline-none ${className ?? ""}`}
     >
       <svg
         width="32"
@@ -19,7 +20,7 @@ export function RetroLogo() {
         viewBox="0 0 32 32"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className={retroChudActive ? "text-[#39ff14]" : "text-primary"}
+        className={active ? "text-[#39ff14]" : "text-primary"}
       >
         <rect x="0.5" y="0.5" width="31" height="31" rx="2" stroke="currentColor" />
         <line x1="5" y1="26" x2="27" y2="26" stroke="currentColor" strokeWidth="1" />
@@ -30,3 +31,5 @@ export function RetroLogo() {
     </button>
   );
 }
+
+export const APP_TITLE_CLASS = "font-mono text-lg font-semibold tracking-wide uppercase";

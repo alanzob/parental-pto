@@ -1,16 +1,15 @@
 "use client";
 
 import { useChudMode } from "@/components/chud-mode-provider";
+import { AppLogo, APP_TITLE_CLASS } from "@/components/app-logo";
 
 export function DashboardTitle() {
   const { registerClick } = useChudMode();
 
   return (
-    <h1
-      className="cursor-default text-lg font-semibold select-none"
-      onClick={registerClick}
-    >
-      Parental PTO
-    </h1>
+    <div className="flex items-center gap-3">
+      <AppLogo onClick={registerClick} />
+      <h1 className={APP_TITLE_CLASS}>Parental PTO</h1>
+    </div>
   );
 }

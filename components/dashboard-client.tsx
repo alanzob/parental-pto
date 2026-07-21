@@ -264,7 +264,7 @@ export function DashboardClient({
       )}
 
       <div id="activity" className="scroll-mt-4">
-        <h2 className="mb-2 text-sm font-medium">Recent activity</h2>
+        <h2 className="label-tag mb-2">Recent activity</h2>
         {myPendingConversions.length > 0 && (
           <p className="text-muted-foreground mb-2 text-xs">
             {myPendingConversions.length} conversion request
