@@ -11,6 +11,7 @@ import { RequestPtoDialog } from "@/components/request-pto-dialog";
 import { PtoCalendarHeatmap, type HeatmapEntry } from "@/components/pto/calendar-heatmap";
 import { ComparativeStats, type StatRow } from "@/components/pto/comparative-stats";
 import { CalendarFeedCallout } from "@/components/calendar-feed-callout";
+import { ResearchNotesWidget } from "@/components/pto/research-notes-widget";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -191,6 +192,8 @@ export function DashboardClient({
       )}
 
       <BalanceCards partner={partner} myBalance={myBalance} partnerBalance={partnerBalance} />
+
+      <ResearchNotesWidget />
 
       {partner && (
         <ComparativeStats

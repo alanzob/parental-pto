@@ -29,6 +29,16 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Applied before hydration so returning high-contrast users don't
+         * see a flash of the normal theme on load. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try { if (localStorage.getItem('parental-pto-high-contrast') === '1') document.documentElement.classList.add('high-contrast'); } catch (e) {}",
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <ChudModeProvider>
           {children}

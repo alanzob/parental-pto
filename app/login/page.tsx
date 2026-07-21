@@ -15,6 +15,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CoffeeLink } from "@/components/coffee-link";
+import { HighContrastToggle } from "@/components/high-contrast-toggle";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -78,7 +80,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-4">
+    <div className="flex flex-1 flex-col items-center justify-center gap-4 p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Parental PTO</CardTitle>
@@ -167,6 +169,10 @@ export default function LoginPage() {
           </p>
         </CardFooter>
       </Card>
+      <div className="flex items-center gap-3">
+        <HighContrastToggle />
+        <CoffeeLink />
+      </div>
     </div>
   );
 }

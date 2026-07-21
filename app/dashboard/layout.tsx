@@ -3,6 +3,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardTitle } from "@/components/dashboard-title";
 import { SignOutButton } from "@/components/sign-out-button";
+import { CoffeeLink } from "@/components/coffee-link";
+import { HighContrastToggle } from "@/components/high-contrast-toggle";
 import { buttonVariants } from "@/components/ui/button";
 
 export default async function DashboardLayout({
@@ -43,6 +45,7 @@ export default async function DashboardLayout({
             >
               Settings
             </Link>
+            <HighContrastToggle />
             <SignOutButton />
           </nav>
         </div>
@@ -50,6 +53,11 @@ export default async function DashboardLayout({
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
         {children}
       </main>
+      <footer className="border-t">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-center px-4 py-3">
+          <CoffeeLink />
+        </div>
+      </footer>
     </div>
   );
 }

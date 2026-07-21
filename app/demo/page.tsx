@@ -9,7 +9,10 @@ import { RequestList } from "@/components/demo/request-list";
 import { NewRequestDialog } from "@/components/demo/new-request-dialog";
 import { StatsPanel } from "@/components/demo/stats-panel";
 import { CalendarHeatmap } from "@/components/demo/calendar-heatmap";
+import { ResearchNotesWidget } from "@/components/pto/research-notes-widget";
 import { AppLogo, APP_TITLE_CLASS } from "@/components/app-logo";
+import { CoffeeLink } from "@/components/coffee-link";
+import { HighContrastToggle } from "@/components/high-contrast-toggle";
 import { Button, buttonVariants } from "@/components/ui/button";
 
 function DemoShell() {
@@ -34,7 +37,10 @@ function DemoShell() {
               </p>
             </div>
           </div>
-          <PersonaSwitcher />
+          <div className="flex items-center gap-2">
+            <HighContrastToggle />
+            <PersonaSwitcher />
+          </div>
         </div>
       </header>
 
@@ -74,6 +80,8 @@ function DemoShell() {
 
         <BalanceCards />
 
+        <ResearchNotesWidget />
+
         <StatsPanel />
 
         <div id="activity" className="scroll-mt-4">
@@ -85,6 +93,12 @@ function DemoShell() {
       </main>
 
       <NewRequestDialog key={nonce} open={dialogOpen} onOpenChange={setDialogOpen} />
+
+      <footer className="border-t">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-center px-4 py-3">
+          <CoffeeLink />
+        </div>
+      </footer>
     </div>
   );
 }
