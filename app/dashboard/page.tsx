@@ -18,38 +18,28 @@ export default async function DashboardPage() {
 
   if (!profile?.household_id) redirect("/onboarding");
 
-  const [
-    { data: household },
-    { data: profiles },
-    { data: balances },
-    { data: transactions },
-    { data: conversions },
-  ] = await Promise.all([
-    supabase
-      .from("households")
-      .select("*")
-      .eq("id", profile.household_id)
-      .single(),
-    supabase
-      .from("profiles")
-      .select("id, display_name")
-      .eq("household_id", profile.household_id),
-    supabase
-      .from("pto_balances")
-      .select("*")
-      .eq("household_id", profile.household_id),
-    supabase
-      .from("pto_transactions")
-      .select("*")
-      .eq("household_id", profile.household_id)
-      .order("occurred_at", { ascending: false })
-      .limit(25),
-    supabase
-      .from("pto_conversions")
-      .select("*")
-      .eq("household_id", profile.household_id)
-      .order("created_at", { ascending: false }),
-  ]);
+  const [{ data: household }, { data: profiles }, { data: balances }, { data: requests }] =
+    await Promise.all([
+      supabase
+        .from("households")
+        .select("*")
+        .eq("id", profile.household_id)
+        .single(),
+      supabase
+        .from("profiles")
+        .select("id, display_name")
+        .eq("household_id", profile.household_id),
+      supabase
+        .from("pto_balances")
+        .select("*")
+        .eq("household_id", profile.household_id),
+      supabase
+        .from("pto_transactions")
+        .select("*")
+        .eq("household_id", profile.household_id)
+        .order("occurred_at", { ascending: false })
+        .limit(50),
+    ]);
 
   const partner = (profiles ?? []).find((p) => p.id !== user.id) ?? null;
   const me = (profiles ?? []).find((p) => p.id === user.id) ?? profile;
@@ -60,8 +50,7 @@ export default async function DashboardPage() {
       partner={partner}
       household={household!}
       balances={balances ?? []}
-      transactions={transactions ?? []}
-      conversions={conversions ?? []}
+      requests={requests ?? []}
     />
   );
 }

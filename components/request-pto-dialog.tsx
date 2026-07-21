@@ -13,21 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DURATION_PRESETS,
-  PTO_CATEGORIES,
-  categoryLabel,
-  type PtoCategory,
-} from "@/lib/pto/categories";
+import { computeDuration, formatDuration } from "@/lib/duration";
 import type { Household } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 function toLocalDatetimeInput(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -36,75 +23,56 @@ function toLocalDatetimeInput(date: Date): string {
   )}:${pad(date.getMinutes())}`;
 }
 
-const CUSTOM = "custom" as const;
-
 export function RequestPtoDialog({
-  defaultCategory,
   household,
+  partnerName,
   open,
   onOpenChange,
   onSubmit,
-  chudMode,
 }: {
-  /** Preselected category (from a balance card), or null to let the user
-   * pick — used when opened from the dashboard's generic quick action. */
-  defaultCategory: PtoCategory | null;
   household: Household;
+  partnerName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (input: {
-    category: PtoCategory;
-    hours: number;
-    occurredAt: string;
+    title: string;
+    offDutyStart: string;
+    backOnDuty: string;
     note: string;
   }) => Promise<boolean>;
-  chudMode: boolean;
 }) {
   // Remounted via `key` each time it opens (see dashboard-client.tsx), so
   // these initial values are fresh per open without needing an effect.
-  const [category, setCategory] = useState<PtoCategory>(
-    defaultCategory ?? PTO_CATEGORIES[0],
-  );
-  const presets = DURATION_PRESETS[category];
-  const [selection, setSelection] = useState<number | typeof CUSTOM>(0);
-  const [customHours, setCustomHours] = useState("2");
-  const [when, setWhen] = useState(() => toLocalDatetimeInput(new Date()));
+  const [title, setTitle] = useState("");
+  const [offDutyStart, setOffDutyStart] = useState(() => toLocalDatetimeInput(new Date()));
+  const [backOnDuty, setBackOnDuty] = useState(() => {
+    const d = new Date();
+    d.setHours(d.getHours() + 4);
+    return toLocalDatetimeInput(d);
+  });
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const hours =
-    selection === CUSTOM
-      ? parseFloat(customHours)
-      : (DURATION_PRESETS[category][selection]?.hours ?? NaN);
+  const valid = title.trim().length > 0 && backOnDuty > offDutyStart;
+  const preview = backOnDuty > offDutyStart ? computeDuration(offDutyStart, backOnDuty) : null;
 
   const isPeakPreview = useMemo(() => {
-    const timePart = when.split("T")[1];
+    const timePart = offDutyStart.split("T")[1];
     if (!timePart) return false;
     return (
       timePart >= household.peak_window_start.slice(0, 5) &&
       timePart < household.peak_window_end.slice(0, 5)
     );
-  }, [when, household]);
-
-  const previewCost = useMemo(() => {
-    if (isNaN(hours) || hours <= 0) return null;
-    const multiplier = isPeakPreview ? household.peak_multiplier : 1;
-    return (hours * multiplier).toFixed(1);
-  }, [hours, isPeakPreview, household.peak_multiplier]);
-
-  function changeCategory(next: PtoCategory) {
-    setCategory(next);
-    setSelection(0);
-  }
+  }, [offDutyStart, household]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (isNaN(hours) || hours <= 0) return;
+    if (!valid) return;
     setSubmitting(true);
     const ok = await onSubmit({
-      category,
-      hours,
-      occurredAt: new Date(when).toISOString(),
+      title: title.trim(),
+      offDutyStart: new Date(offDutyStart).toISOString(),
+      backOnDuty: new Date(backOnDuty).toISOString(),
       note,
     });
     setSubmitting(false);
@@ -117,88 +85,59 @@ export function RequestPtoDialog({
         <DialogHeader>
           <DialogTitle>Request time off</DialogTitle>
           <DialogDescription>
-            The final cost is calculated on the server using your
-            household&apos;s peak-hour settings — this preview is approximate.
+            Like a car rental: when do you go off duty, and when are you back?
+            {partnerName} banks the equivalent credit once they approve.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Category</Label>
-            <Select value={category} onValueChange={(v) => changeCategory(v as PtoCategory)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PTO_CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {categoryLabel(c, chudMode)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Duration</Label>
-            <div className="flex flex-wrap gap-2">
-              {presets.map((preset, i) => (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => setSelection(i)}
-                  className={cn(
-                    "rounded-md border px-3 py-1.5 text-sm",
-                    selection === i
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "hover:bg-muted",
-                  )}
-                >
-                  {preset.label}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setSelection(CUSTOM)}
-                className={cn(
-                  "rounded-md border px-3 py-1.5 text-sm",
-                  selection === CUSTOM
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "hover:bg-muted",
-                )}
-              >
-                Custom
-              </button>
-            </div>
-            {selection === CUSTOM && (
-              <Input
-                type="number"
-                min="0.5"
-                step="0.5"
-                value={customHours}
-                onChange={(e) => setCustomHours(e.target.value)}
-                placeholder="Hours"
-                className="mt-2"
-                required
-              />
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="when">When</Label>
+            <Label htmlFor="title">Name this request</Label>
             <Input
-              id="when"
-              type="datetime-local"
-              value={when}
-              onChange={(e) => setWhen(e.target.value)}
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Trip to Cali"
               required
             />
-            {isPeakPreview && (
-              <p className="text-muted-foreground text-xs">
-                Falls in the household&apos;s peak window (
-                {household.peak_multiplier}x) — likely {previewCost}h total.
-              </p>
-            )}
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="off-duty">Off duty starting</Label>
+              <Input
+                id="off-duty"
+                type="datetime-local"
+                value={offDutyStart}
+                onChange={(e) => setOffDutyStart(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="back-on-duty">Back on duty</Label>
+              <Input
+                id="back-on-duty"
+                type="datetime-local"
+                value={backOnDuty}
+                onChange={(e) => setBackOnDuty(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          {preview && (
+            <p className="bg-muted rounded-md p-2 text-sm">
+              {formatDuration(preview.fullDays, preview.hours)}
+              {isPeakPreview &&
+                ` — ${household.peak_multiplier}x peak rate applies (starts in the household's peak window)`}{" "}
+              — banked to {partnerName} once approved.
+            </p>
+          )}
+          {backOnDuty <= offDutyStart && (
+            <p className="text-destructive text-sm">
+              &quot;Back on duty&quot; must be after &quot;Off duty starting&quot;.
+            </p>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="note">Note (optional)</Label>
             <Textarea
@@ -209,8 +148,8 @@ export function RequestPtoDialog({
             />
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={submitting || isNaN(hours) || hours <= 0}>
-              {submitting ? "Logging…" : "Log request"}
+            <Button type="submit" disabled={submitting || !valid}>
+              {submitting ? "Sending…" : "Submit for approval"}
             </Button>
           </DialogFooter>
         </form>

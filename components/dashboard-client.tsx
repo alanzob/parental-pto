@@ -4,13 +4,9 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { PTO_CATEGORIES, type PtoCategory } from "@/lib/pto/categories";
-import type { Household, PtoBalance, PtoConversion, PtoTransaction } from "@/lib/types";
-import { useChudMode } from "@/components/chud-mode-provider";
-import { BalanceCard } from "@/components/balance-card";
-import { ApprovalInbox } from "@/components/approval-inbox";
-import { TransactionsList } from "@/components/transactions-list";
-import { ConversionDialog } from "@/components/conversion-dialog";
+import type { Household, PtoBalance, PtoTransaction } from "@/lib/types";
+import { BalanceCards } from "@/components/balance-cards";
+import { RequestsList } from "@/components/requests-list";
 import { RequestPtoDialog } from "@/components/request-pto-dialog";
 import { PtoCalendarHeatmap, type HeatmapEntry } from "@/components/pto/calendar-heatmap";
 import { ComparativeStats, type StatRow } from "@/components/pto/comparative-stats";
@@ -25,165 +21,121 @@ export function DashboardClient({
   partner,
   household,
   balances,
-  transactions,
-  conversions,
+  requests,
 }: {
   me: PersonRef;
   partner: PersonRef | null;
   household: Household;
   balances: PtoBalance[];
-  transactions: PtoTransaction[];
-  conversions: PtoConversion[];
+  requests: PtoTransaction[];
 }) {
   const supabase = createClient();
   const router = useRouter();
-  const { enabled: chudMode } = useChudMode();
 
   const [requestOpen, setRequestOpen] = useState(false);
-  const [requestDefaultCategory, setRequestDefaultCategory] = useState<PtoCategory | null>(null);
   const [requestNonce, setRequestNonce] = useState(0);
-  const [conversionOpen, setConversionOpen] = useState(false);
-  const [conversionNonce, setConversionNonce] = useState(0);
 
-  function openRequestDialog(defaultCategory: PtoCategory | null) {
-    setRequestDefaultCategory(defaultCategory);
-    setRequestOpen(true);
-    setRequestNonce((n) => n + 1);
-  }
+  const myBalance = balances.find((b) => b.user_id === me.id)?.current_balance ?? 0;
+  const partnerBalance = partner
+    ? (balances.find((b) => b.user_id === partner.id)?.current_balance ?? 0)
+    : 0;
 
-  const balanceByPerson = useMemo(() => {
-    const map = new Map<string, Map<PtoCategory, number>>();
-    for (const b of balances) {
-      if (!map.has(b.user_id)) map.set(b.user_id, new Map());
-      map.get(b.user_id)!.set(b.category, b.current_balance);
-    }
-    return map;
-  }, [balances]);
-
-  const myBalances = balanceByPerson.get(me.id) ?? new Map();
-  const partnerBalances = partner ? balanceByPerson.get(partner.id) ?? new Map() : null;
-
-  const pendingForMe = conversions.filter(
-    (c) => c.status === "pending_partner_approval" && c.requested_by !== me.id,
-  );
-  const myPendingConversions = conversions.filter(
-    (c) => c.status === "pending_partner_approval" && c.requested_by === me.id,
+  const pendingForMe = requests.filter((r) => r.status === "pending" && r.user_id === me.id);
+  const myPendingRequests = requests.filter(
+    (r) => r.status === "pending" && r.initiated_by === me.id,
   );
 
   const calendarEntries = useMemo<HeatmapEntry[]>(() => {
     if (!partner) return [];
-    return transactions
-      .filter((t) => t.status === "completed" && t.transaction_type === "request")
-      .map((t) => {
-        const start = new Date(t.occurred_at);
-        const end = new Date(start.getTime() + t.base_hours * 60 * 60 * 1000);
-        return { start, end, person: t.user_id === me.id ? ("a" as const) : ("b" as const) };
+    return requests
+      .filter((r) => r.status === "approved")
+      .map((r) => {
+        const start = new Date(r.occurred_at);
+        const end = new Date(start.getTime() + r.base_hours * 60 * 60 * 1000);
+        return {
+          start,
+          end,
+          person: r.initiated_by === me.id ? ("a" as const) : ("b" as const),
+        };
       });
-  }, [transactions, me.id, partner]);
+  }, [requests, me.id, partner]);
 
   const statsRows = useMemo<StatRow[]>(() => {
     if (!partner) return [];
+    const countBy = (userId: string, field: "initiated_by" | "user_id", status: string) =>
+      requests.filter((r) => r[field] === userId && r.status === status).length;
+
     const hoursOffFor = (userId: string) =>
-      transactions
-        .filter(
-          (t) =>
-            t.user_id === userId && t.status === "completed" && t.transaction_type === "request",
-        )
-        .reduce((sum, t) => sum + t.base_hours, 0);
-
-    const balanceFor = (userId: string) =>
-      balances.filter((b) => b.user_id === userId).reduce((sum, b) => sum + b.current_balance, 0);
-
-    const conversionCount = (userId: string, status: PtoConversion["status"]) =>
-      conversions.filter((c) => c.requested_by === userId && c.status === status).length;
+      requests
+        .filter((r) => r.initiated_by === userId && r.status === "approved")
+        .reduce((sum, r) => sum + r.base_hours, 0);
 
     return [
       {
-        label: "TIME OFF DUTY (COMPLETED)",
+        label: "TIME OFF DUTY (APPROVED)",
         a: `${hoursOffFor(me.id).toFixed(1)}H`,
         b: `${hoursOffFor(partner.id).toFixed(1)}H`,
       },
       {
         label: "CURRENT BANK BALANCE",
-        a: `${balanceFor(me.id).toFixed(1)}H`,
-        b: `${balanceFor(partner.id).toFixed(1)}H`,
+        a: `${myBalance.toFixed(1)}H`,
+        b: `${partnerBalance.toFixed(1)}H`,
       },
       {
-        label: "CONVERSIONS APPROVED",
-        a: String(conversionCount(me.id, "approved")),
-        b: String(conversionCount(partner.id, "approved")),
+        label: "REQUESTS APPROVED",
+        a: String(countBy(me.id, "initiated_by", "approved")),
+        b: String(countBy(partner.id, "initiated_by", "approved")),
       },
       {
-        label: "CONVERSIONS DENIED",
-        a: String(conversionCount(me.id, "denied")),
-        b: String(conversionCount(partner.id, "denied")),
+        label: "REQUESTS DENIED",
+        a: String(countBy(me.id, "initiated_by", "denied")),
+        b: String(countBy(partner.id, "initiated_by", "denied")),
       },
       {
-        label: "AWAITING PARTNER APPROVAL",
-        a: String(conversionCount(me.id, "pending_partner_approval")),
-        b: String(conversionCount(partner.id, "pending_partner_approval")),
+        label: "AWAITING THEIR APPROVAL",
+        a: String(countBy(me.id, "initiated_by", "pending")),
+        b: String(countBy(partner.id, "initiated_by", "pending")),
       },
     ];
-  }, [transactions, balances, conversions, me.id, partner]);
+  }, [requests, me.id, partner, myBalance, partnerBalance]);
 
-  const statsFooter = useMemo(() => {
-    if (!partner) return undefined;
-    const balanceFor = (userId: string) =>
-      balances.filter((b) => b.user_id === userId).reduce((sum, b) => sum + b.current_balance, 0);
-    const diff = balanceFor(partner.id) - balanceFor(me.id);
-    return `Δ ${Math.abs(diff).toFixed(1)}H ${diff >= 0 ? `favoring ${partner.display_name ?? "partner"}` : "favoring you"}`;
-  }, [balances, me.id, partner]);
+  const statsFooter = partner
+    ? `Δ ${Math.abs(partnerBalance - myBalance).toFixed(1)}H ${
+        partnerBalance - myBalance >= 0
+          ? `favoring ${partner.display_name ?? "partner"}`
+          : "favoring you"
+      }`
+    : undefined;
 
   async function submitRequest(input: {
-    category: PtoCategory;
-    hours: number;
-    occurredAt: string;
+    title: string;
+    offDutyStart: string;
+    backOnDuty: string;
     note: string;
   }) {
     const { error } = await supabase.rpc("create_pto_request", {
-      p_category: input.category,
-      p_base_hours: input.hours,
-      p_occurred_at: input.occurredAt,
+      p_title: input.title,
+      p_off_duty_start: input.offDutyStart,
+      p_back_on_duty: input.backOnDuty,
       p_note: input.note || null,
     });
     if (error) {
       toast.error(friendlyRpcError(error.message));
       return false;
     }
-    toast.success("Logged.");
-    router.refresh();
-    return true;
-  }
-
-  async function submitConversion(input: {
-    from: PtoCategory;
-    to: PtoCategory;
-    hours: number;
-  }) {
-    const { error } = await supabase.from("pto_conversions").insert({
-      household_id: household.id,
-      requested_by: me.id,
-      from_category: input.from,
-      to_category: input.to,
-      hours: input.hours,
-    });
-    if (error) {
-      toast.error(error.message);
-      return false;
-    }
     toast.success(
       partner
         ? `Sent to ${partner.display_name ?? "your partner"} for approval.`
-        : "Conversion requested.",
+        : "Request submitted.",
     );
     router.refresh();
     return true;
   }
 
-  async function respondToConversion(id: string, approve: boolean) {
+  async function respondToRequest(id: string, approve: boolean) {
     const { error } = await supabase.rpc(
-      approve ? "approve_conversion" : "deny_conversion",
-      { p_conversion_id: id },
+      approve ? "approve_pto_request" : "deny_pto_request",
+      { p_transaction_id: id },
     );
     if (error) {
       toast.error(friendlyRpcError(error.message));
@@ -201,7 +153,7 @@ export function DashboardClient({
             <CardTitle>Waiting on your partner</CardTitle>
             <CardDescription>
               Invite them from Settings so you can both track balances and
-              approve conversions.
+              approve requests.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -216,43 +168,28 @@ export function DashboardClient({
       )}
 
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => openRequestDialog(null)}>Request time off</Button>
-        <a href="#activity" className={buttonVariants({ variant: "outline" })}>
-          View activity
-        </a>
         <Button
-          variant="outline"
           onClick={() => {
-            setConversionOpen(true);
-            setConversionNonce((n) => n + 1);
+            setRequestOpen(true);
+            setRequestNonce((n) => n + 1);
           }}
           disabled={!partner}
         >
-          Propose a conversion
+          Request time off
         </Button>
+        <a href="#activity" className={buttonVariants({ variant: "outline" })}>
+          View activity
+        </a>
       </div>
 
       {pendingForMe.length > 0 && (
-        <ApprovalInbox
-          conversions={pendingForMe}
-          chudMode={chudMode}
-          onRespond={respondToConversion}
-        />
+        <div className="border-primary bg-accent border p-3 text-sm">
+          {pendingForMe.length} request{pendingForMe.length > 1 ? "s" : ""} waiting
+          on your approval below.
+        </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {PTO_CATEGORIES.map((category) => (
-          <BalanceCard
-            key={category}
-            category={category}
-            chudMode={chudMode}
-            myBalance={myBalances.get(category) ?? 0}
-            partnerBalance={partnerBalances?.get(category) ?? null}
-            partnerName={partner?.display_name}
-            onRequest={() => openRequestDialog(category)}
-          />
-        ))}
-      </div>
+      <BalanceCards partner={partner} myBalance={myBalance} partnerBalance={partnerBalance} />
 
       {partner && (
         <ComparativeStats
@@ -265,19 +202,13 @@ export function DashboardClient({
 
       <div id="activity" className="scroll-mt-4">
         <h2 className="label-tag mb-2">Recent activity</h2>
-        {myPendingConversions.length > 0 && (
+        {myPendingRequests.length > 0 && (
           <p className="text-muted-foreground mb-2 text-xs">
-            {myPendingConversions.length} conversion request
-            {myPendingConversions.length > 1 ? "s" : ""} awaiting your
-            partner&apos;s approval.
+            {myPendingRequests.length} request{myPendingRequests.length > 1 ? "s" : ""}{" "}
+            awaiting your partner&apos;s approval.
           </p>
         )}
-        <TransactionsList
-          transactions={transactions}
-          me={me}
-          partner={partner}
-          chudMode={chudMode}
-        />
+        <RequestsList requests={requests} me={me} partner={partner} onRespond={respondToRequest} />
       </div>
 
       {partner && (
@@ -288,34 +219,26 @@ export function DashboardClient({
         />
       )}
 
-      <RequestPtoDialog
-        key={`request-${requestNonce}`}
-        defaultCategory={requestDefaultCategory}
-        household={household}
-        open={requestOpen}
-        onOpenChange={setRequestOpen}
-        onSubmit={submitRequest}
-        chudMode={chudMode}
-      />
-
-      <ConversionDialog
-        key={`conversion-${conversionNonce}`}
-        open={conversionOpen}
-        onOpenChange={setConversionOpen}
-        onSubmit={submitConversion}
-        chudMode={chudMode}
-      />
+      {partner && (
+        <RequestPtoDialog
+          key={requestNonce}
+          household={household}
+          partnerName={partner.display_name ?? "your partner"}
+          open={requestOpen}
+          onOpenChange={setRequestOpen}
+          onSubmit={submitRequest}
+        />
+      )}
     </div>
   );
 }
 
 const RPC_ERROR_MESSAGES: Record<string, string> = {
-  OVERDRAFT_FLOOR_EXCEEDED:
-    "That would exceed the household's overdraft floor.",
   SELF_APPROVAL_BLOCKED: "You can't approve or deny your own request.",
   ALREADY_RESOLVED: "That request was already handled.",
-  NO_BALANCE_ROW: "No balance found for that category.",
-  INVALID_HOURS: "Enter a positive number of hours.",
+  NO_PARTNER: "Invite your partner before requesting time off.",
+  INVALID_TITLE: "Give this request a name.",
+  INVALID_WINDOW: "Back on duty must be after off duty starting.",
 };
 
 function friendlyRpcError(message: string): string {

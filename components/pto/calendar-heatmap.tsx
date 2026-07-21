@@ -30,11 +30,13 @@ function cellBackground(colorA: string, colorB: string, a: Overlap, b: Overlap):
   return "transparent";
 }
 
+const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+
 function monthGrid(year: number, month: number): (Date | null)[] {
   const firstDay = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  // Monday-first weekday index (0 = Mon .. 6 = Sun)
-  const startOffset = (firstDay.getDay() + 6) % 7;
+  // Sunday-first weekday index (0 = Sun .. 6 = Sat) — matches Date#getDay() directly.
+  const startOffset = firstDay.getDay();
   const cells: (Date | null)[] = Array(startOffset).fill(null);
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push(new Date(year, month, d));
@@ -100,6 +102,11 @@ export function PtoCalendarHeatmap({
               <p className="label-tag mb-1.5">
                 {new Date(year, month, 1).toLocaleString(undefined, { month: "short" })} {year}
               </p>
+              <div className="text-muted-foreground mb-0.5 grid grid-cols-7 gap-px text-center font-mono text-[9px]">
+                {WEEKDAY_LABELS.map((w, i) => (
+                  <div key={i}>{w}</div>
+                ))}
+              </div>
               <div className="grid grid-cols-7 gap-px">
                 {monthGrid(year, month).map((day, i) => {
                   if (!day) return <div key={i} className="aspect-square" />;

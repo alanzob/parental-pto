@@ -39,8 +39,7 @@ export async function GET(
       .from("pto_transactions")
       .select("*")
       .eq("household_id", household.id)
-      .eq("status", "completed")
-      .eq("transaction_type", "request")
+      .eq("status", "approved")
       .order("occurred_at", { ascending: false })
       .limit(500),
   ]);

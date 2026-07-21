@@ -1,5 +1,4 @@
 import { createEvents, type DateArray, type EventAttributes } from "ics";
-import { categoryLabel } from "@/lib/pto/categories";
 import type { PtoTransaction } from "@/lib/types";
 
 function toUtcDateArray(iso: string): DateArray {
@@ -21,11 +20,13 @@ export function buildIcsFeed(
   const events: EventAttributes[] = transactions.map((t) => {
     const start = new Date(t.occurred_at);
     const end = new Date(start.getTime() + t.base_hours * 60 * 60 * 1000);
-    const who = displayNameByUserId.get(t.user_id) ?? "Someone";
+    // initiated_by is whoever is actually off duty during this window —
+    // user_id is the partner being credited, not who the calendar block is for.
+    const who = displayNameByUserId.get(t.initiated_by) ?? "Someone";
 
     return {
       uid: `${t.id}@parental-pto`,
-      title: `${who} — ${categoryLabel(t.category, false)}`,
+      title: `${who} — ${t.title}`,
       description: t.note ?? undefined,
       start: toUtcDateArray(start.toISOString()),
       startInputType: "utc",

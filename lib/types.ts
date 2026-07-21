@@ -1,5 +1,3 @@
-import type { PtoCategory } from "@/lib/pto/categories";
-
 export type Household = {
   id: string;
   name: string;
@@ -37,44 +35,27 @@ export type PtoBalance = {
   id: string;
   household_id: string;
   user_id: string;
-  category: PtoCategory;
   current_balance: number;
   overdraft_floor_override: number | null;
   last_expired_at: string | null;
   updated_at: string;
 };
 
+/** A named request for time off. `user_id` is whose balance is CREDITED
+ * (the partner covering for `initiated_by`), not who's taking the time —
+ * approval by `user_id` adds `final_cost` hours to their own balance. */
 export type PtoTransaction = {
   id: string;
   household_id: string;
   user_id: string;
   initiated_by: string;
-  category: PtoCategory;
-  transaction_type:
-    | "request"
-    | "credit_earned"
-    | "trade"
-    | "gift"
-    | "adjustment"
-    | "expiration";
+  transaction_type: "request";
+  title: string;
   base_hours: number;
   multiplier: number;
   final_cost: number;
-  status: "pending" | "approved" | "denied" | "completed" | "cancelled";
+  status: "pending" | "approved" | "denied";
   note: string | null;
   occurred_at: string;
-  created_at: string;
-};
-
-export type PtoConversion = {
-  id: string;
-  household_id: string;
-  requested_by: string;
-  from_category: PtoCategory;
-  to_category: PtoCategory;
-  hours: number;
-  status: "pending_partner_approval" | "approved" | "denied" | "cancelled";
-  approved_by: string | null;
-  approved_at: string | null;
   created_at: string;
 };
