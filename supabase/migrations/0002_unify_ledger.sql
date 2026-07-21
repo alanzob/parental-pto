@@ -31,31 +31,23 @@ drop table if exists public.pto_conversions;
 -- Collapse any existing per-category rows (from before this migration)
 -- into a single summed balance per person — MUST happen before the
 -- unique(household_id, user_id) constraint below, or it'll reject the
--- duplicates. Written to be safe to re-run: if rows are already
--- consolidated to one per person, this is a no-op (summing one row
--- equals itself, and there are no "extra" rows left to delete).
-with summed as (
-  select household_id, user_id, sum(current_balance) as total
+-- duplicates. Two self-contained statements (a WITH clause can't span
+-- statements) using min(id) per group as the arbitrary row to keep.
+-- Safe to re-run: once there's one row per person, min(id) is that row's
+-- own id, so the UPDATE is a no-op and the DELETE removes nothing.
+update public.pto_balances b
+set current_balance = agg.total, updated_at = now()
+from (
+  select household_id, user_id, sum(current_balance) as total, min(id) as keep_id
   from public.pto_balances
   group by household_id, user_id
-),
-keep as (
-  select distinct on (household_id, user_id) id, household_id, user_id
-  from public.pto_balances
-  order by household_id, user_id, updated_at desc nulls last, id
-)
-update public.pto_balances b
-set current_balance = s.total, updated_at = now()
-from summed s, keep k
-where b.id = k.id
-  and k.household_id = s.household_id
-  and k.user_id = s.user_id;
+) agg
+where b.id = agg.keep_id;
 
 delete from public.pto_balances b
-using keep k
-where b.household_id = k.household_id
-  and b.user_id = k.user_id
-  and b.id != k.id;
+where b.id not in (
+  select min(id) from public.pto_balances group by household_id, user_id
+);
 
 alter table public.pto_balances drop constraint if exists pto_balances_household_id_user_id_category_key;
 alter table public.pto_balances drop column if exists category;
