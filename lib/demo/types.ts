@@ -52,21 +52,3 @@ export function normalizeDuration(totalHours: number): { fullDays: number; hours
 export function durationToHours(fullDays: number, hours: number): number {
   return fullDays * 24 + hours;
 }
-
-/** Whether, and how much of, a given calendar day (local) overlaps an
- * off-duty window — used by the 12-month calendar heatmap. */
-export function dayOverlap(
-  dayStart: Date,
-  offDutyStart: string,
-  backOnDuty: string,
-): "none" | "half" | "full" {
-  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-  const start = new Date(offDutyStart);
-  const end = new Date(backOnDuty);
-  const overlapStart = Math.max(dayStart.getTime(), start.getTime());
-  const overlapEnd = Math.min(dayEnd.getTime(), end.getTime());
-  const overlapHours = Math.max(0, overlapEnd - overlapStart) / (1000 * 60 * 60);
-  if (overlapHours <= 0) return "none";
-  if (overlapHours >= 24) return "full";
-  return "half";
-}

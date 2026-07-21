@@ -2,15 +2,13 @@
 
 import { useMemo } from "react";
 import { useDemo } from "@/components/demo/demo-provider";
-import { durationToHours, type DemoPerson } from "@/lib/demo/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-type Row = { label: string; brian: string; vanda: string };
+import { DEMO_PEOPLE, durationToHours, type DemoPerson } from "@/lib/demo/types";
+import { ComparativeStats, type StatRow } from "@/components/pto/comparative-stats";
 
 export function StatsPanel() {
   const { requests, balanceFor } = useDemo();
 
-  const rows: Row[] = useMemo(() => {
+  const rows: StatRow[] = useMemo(() => {
     const people: DemoPerson[] = ["brian", "vanda"];
 
     const countBy = (status: string, field: "requestedBy" | "creditedTo") =>
@@ -44,68 +42,45 @@ export function StatsPanel() {
     return [
       {
         label: "TIME OFF DUTY (APPROVED)",
-        brian: `${totalHoursOff.brian}H`,
-        vanda: `${totalHoursOff.vanda}H`,
+        a: `${totalHoursOff.brian}H`,
+        b: `${totalHoursOff.vanda}H`,
       },
       {
         label: "CURRENT BANK BALANCE",
-        brian: `${balances.brian}H`,
-        vanda: `${balances.vanda}H`,
+        a: `${balances.brian}H`,
+        b: `${balances.vanda}H`,
       },
       {
         label: "REQUESTS APPROVED",
-        brian: String(requestedTotal.brian),
-        vanda: String(requestedTotal.vanda),
+        a: String(requestedTotal.brian),
+        b: String(requestedTotal.vanda),
       },
       {
         label: "REQUESTS DENIED",
-        brian: String(deniedTotal.brian),
-        vanda: String(deniedTotal.vanda),
+        a: String(deniedTotal.brian),
+        b: String(deniedTotal.vanda),
       },
       {
         label: "AWAITING THEIR APPROVAL",
-        brian: String(pendingByCreditedTo.brian),
-        vanda: String(pendingByCreditedTo.vanda),
+        a: String(pendingByCreditedTo.brian),
+        b: String(pendingByCreditedTo.vanda),
       },
     ];
   }, [requests, balanceFor]);
 
-  const balanceDiff = useMemo(() => {
+  const footer = useMemo(() => {
     const b = balanceFor("brian");
     const v = balanceFor("vanda");
-    return durationToHours(v.fullDays, v.hours) - durationToHours(b.fullDays, b.hours);
+    const diff = durationToHours(v.fullDays, v.hours) - durationToHours(b.fullDays, b.hours);
+    return `Δ ${Math.abs(diff)}H ${diff >= 0 ? "favoring Vanda" : "favoring Brian"}`;
   }, [balanceFor]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="label-tag">Comparative Ledger — Brian vs. Vanda</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <table className="w-full border-collapse font-mono text-sm">
-          <thead>
-            <tr className="border-border border-b">
-              <th className="label-tag text-muted-foreground px-4 py-2 text-left font-normal">
-                Metric
-              </th>
-              <th className="label-tag px-4 py-2 text-right font-normal">Brian Bear</th>
-              <th className="label-tag px-4 py-2 text-right font-normal">Vanda Bear</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.label} className="border-border/60 border-b">
-                <td className="text-muted-foreground px-4 py-2">{r.label}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.brian}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.vanda}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="text-muted-foreground border-border border-t px-4 py-2 text-xs">
-          Δ {Math.abs(balanceDiff)}H {balanceDiff >= 0 ? "favoring Vanda" : "favoring Brian"}
-        </p>
-      </CardContent>
-    </Card>
+    <ComparativeStats
+      labelA={DEMO_PEOPLE.brian.name}
+      labelB={DEMO_PEOPLE.vanda.name}
+      rows={rows}
+      footer={footer}
+    />
   );
 }
