@@ -27,14 +27,40 @@ drop table if exists public.pto_conversions;
 -- ============================================================
 -- pto_balances: one row per person, no category
 -- ============================================================
-alter table public.pto_balances drop constraint if exists pto_balances_household_id_user_id_category_key;
-alter table public.pto_balances drop column if exists category;
-alter table public.pto_balances add constraint pto_balances_household_id_user_id_key unique (household_id, user_id);
 
 -- Collapse any existing per-category rows (from before this migration)
--- into a single summed balance per person before the constraint above
--- would otherwise conflict. Safe no-op on a fresh household.
--- (No-op guard: only matters if 0001-era data exists.)
+-- into a single summed balance per person — MUST happen before the
+-- unique(household_id, user_id) constraint below, or it'll reject the
+-- duplicates. Written to be safe to re-run: if rows are already
+-- consolidated to one per person, this is a no-op (summing one row
+-- equals itself, and there are no "extra" rows left to delete).
+with summed as (
+  select household_id, user_id, sum(current_balance) as total
+  from public.pto_balances
+  group by household_id, user_id
+),
+keep as (
+  select distinct on (household_id, user_id) id, household_id, user_id
+  from public.pto_balances
+  order by household_id, user_id, updated_at desc nulls last, id
+)
+update public.pto_balances b
+set current_balance = s.total, updated_at = now()
+from summed s, keep k
+where b.id = k.id
+  and k.household_id = s.household_id
+  and k.user_id = s.user_id;
+
+delete from public.pto_balances b
+using keep k
+where b.household_id = k.household_id
+  and b.user_id = k.user_id
+  and b.id != k.id;
+
+alter table public.pto_balances drop constraint if exists pto_balances_household_id_user_id_category_key;
+alter table public.pto_balances drop column if exists category;
+alter table public.pto_balances drop constraint if exists pto_balances_household_id_user_id_key;
+alter table public.pto_balances add constraint pto_balances_household_id_user_id_key unique (household_id, user_id);
 
 -- ============================================================
 -- pto_transactions: named requests, no category, credit-only
