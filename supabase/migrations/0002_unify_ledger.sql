@@ -32,13 +32,15 @@ drop table if exists public.pto_conversions;
 -- into a single summed balance per person — MUST happen before the
 -- unique(household_id, user_id) constraint below, or it'll reject the
 -- duplicates. Two self-contained statements (a WITH clause can't span
--- statements) using min(id) per group as the arbitrary row to keep.
+-- statements) using min(id::text) per group as the arbitrary row to
+-- keep — plain uuid has no min()/max() aggregate in Postgres, only text
+-- does, hence the cast (then cast back to uuid for comparison).
 -- Safe to re-run: once there's one row per person, min(id) is that row's
 -- own id, so the UPDATE is a no-op and the DELETE removes nothing.
 update public.pto_balances b
 set current_balance = agg.total, updated_at = now()
 from (
-  select household_id, user_id, sum(current_balance) as total, min(id) as keep_id
+  select household_id, user_id, sum(current_balance) as total, min(id::text)::uuid as keep_id
   from public.pto_balances
   group by household_id, user_id
 ) agg
@@ -46,7 +48,7 @@ where b.id = agg.keep_id;
 
 delete from public.pto_balances b
 where b.id not in (
-  select min(id) from public.pto_balances group by household_id, user_id
+  select min(id::text)::uuid from public.pto_balances group by household_id, user_id
 );
 
 alter table public.pto_balances drop constraint if exists pto_balances_household_id_user_id_category_key;
