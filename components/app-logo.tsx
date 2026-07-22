@@ -11,7 +11,7 @@ export function AppLogo({
     <button
       type="button"
       onClick={onClick}
-      aria-label="Parental PTO"
+      aria-label="MyTO"
       className={`focus-visible:ring-ring shrink-0 select-none rounded-sm focus-visible:ring-2 focus-visible:outline-none ${className ?? ""}`}
     >
       <svg

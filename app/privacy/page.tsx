@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AppLogo, APP_TITLE_CLASS } from "@/components/app-logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export const metadata = { title: "Privacy — Parental PTO" };
+export const metadata = { title: "Privacy — MyTO" };
 
 export default function PrivacyPage() {
   return (
@@ -11,7 +11,7 @@ export default function PrivacyPage() {
         <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/login" className="flex items-center gap-3">
             <AppLogo />
-            <h1 className={APP_TITLE_CLASS}>Parental PTO</h1>
+            <h1 className={APP_TITLE_CLASS}>MyTO</h1>
           </Link>
         </div>
       </header>
@@ -34,7 +34,8 @@ export default function PrivacyPage() {
               Your email and password (used only to sign you in — passwords are hashed by
               Supabase, our auth provider, and never stored or visible in plain text), an optional
               display name, and whatever you enter about your household: a name for your
-              household, your PTO requests (titles, timestamps, notes), and your running balance.
+              household, your time-off requests (titles, timestamps, notes), and your running
+              balance.
             </p>
             <p>
               If you invite a partner, they see your display name, requests, and balance —

@@ -10,7 +10,7 @@ import { AppLogo } from "@/components/app-logo";
 const RULER_TICKS = [0, 25, 50, 75, 100];
 
 export function AuthShell({
-  spec = ["Rev 1.0", "Two-parent household", "Shared time-off ledger"],
+  spec = ["Rev 1.0", "My time off, tracked", "Two who trade off"],
   children,
 }: {
   spec?: string[];
@@ -38,11 +38,12 @@ export function AuthShell({
         </div>
 
         <div className="py-8 md:py-0">
-          <h1 className="font-heading text-4xl leading-[0.95] font-medium tracking-tight md:text-5xl">
-            Parental
-            <br />
-            PTO
+          <h1 className="font-heading text-5xl leading-none font-medium tracking-tight md:text-6xl">
+            MyTO
           </h1>
+          <p className="font-heading text-muted-foreground mt-2 text-lg italic">
+            time to be you
+          </p>
           <div className="text-muted-foreground mt-5 space-y-1">
             {spec.map((line) => (
               <p key={line} className="label-tag">

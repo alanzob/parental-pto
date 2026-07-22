@@ -35,7 +35,7 @@ function DemoShell() {
           <div className="flex items-center gap-3">
             <AppLogo onClick={registerLogoClick} active={retroChudActive} />
             <div>
-              <h1 className={APP_TITLE_CLASS}>Parental PTO — Demo</h1>
+              <h1 className={APP_TITLE_CLASS}>MyTO — Demo</h1>
               <p className="text-muted-foreground text-xs">
                 Local, no login required. Data lives in this browser only.
               </p>

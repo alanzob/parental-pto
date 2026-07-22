@@ -45,7 +45,7 @@ function monthGrid(year: number, month: number): (Date | null)[] {
 }
 
 export function PtoCalendarHeatmap({
-  title = "No-Parenting Schedule — 3 Months Back, 9 Forward",
+  title = "Me-Time Schedule — 3 Months Back, 9 Forward",
   entries,
   labelA,
   labelB,

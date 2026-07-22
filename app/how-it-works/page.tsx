@@ -24,32 +24,32 @@ type Step = {
 const STEPS: Step[] = [
   {
     kicker: "The problem",
-    title: "Someone's always on call",
-    body: "Between school runs, sick days, and the 3am wake-ups, parenting doesn't stop — but it doesn't stop evenly, either. One parent quietly ends up carrying more of the always-on weight. Not by agreement. By default.",
+    title: "Your own time is the first thing to go",
+    body: "Between work, the house, and everyone else's needs, the time to just be yourself quietly disappears — and it doesn't disappear evenly. One of you ends up with less of it. Not by agreement. By default. (If you're a parent, you already know this one.)",
     Icon: IconImbalance,
   },
   {
     kicker: "Why it's hard to fix",
     title: "Nobody's counting, so nobody can prove it",
-    body: "Without a record, “I never get a break” is just a feeling — easy to dismiss, painful to keep repeating. Bringing it up starts to feel like keeping score in a relationship that isn't supposed to be about scores at all.",
+    body: "Without a record, “I never get a moment to myself” is just a feeling — easy to dismiss, painful to keep repeating. Raising it starts to feel like keeping score in a relationship that isn't supposed to be about scores at all.",
     Icon: IconBlankLedger,
   },
   {
     kicker: "The idea",
     title: "Make the invisible, visible",
-    body: "Parental PTO turns time off duty into something as concrete as vacation days: a single, shared ledger both of you can see. Not to keep score for its own sake — to make fairness a fact you can point to, instead of an argument you have to win.",
+    body: "MyTO turns your time off into something as concrete as vacation days: a single, shared ledger you can both see. Not to keep score for its own sake — to make fairness a fact you can point to, instead of an argument you have to win.",
     Icon: IconLedgerBalanced,
   },
   {
     kicker: "How it works · 1",
-    title: "Go off duty, come back on duty",
-    body: "Request time off with a start and an end — a night out, a weekend away, or just a quiet afternoon alone. The app does the math, including a fair premium for hours that cost more. A 2am wake-up isn't the same as a Tuesday lunch.",
+    title: "Clock out to be you",
+    body: "Request time off with a start and an end — a night out, a long run, a class, or just a quiet afternoon alone. The app does the math, including a fair premium for the hours that cost more. Bedtime on a weeknight isn't the same as a Tuesday lunch.",
     Icon: IconDuration,
   },
   {
     kicker: "How it works · 2",
-    title: "Credit goes to whoever held it down",
-    body: "When your partner approves the request, the balance credits to them — not you. Being off duty has a real cost, and it's paid automatically to whoever covered for you, visible to both of you the moment it's approved.",
+    title: "Credit goes to whoever covered",
+    body: "When your partner approves the request, the balance credits to them — not you. Taking time for yourself has a real cost, and it's paid automatically to whoever held things down, visible to you both the moment it's approved.",
     Icon: IconCreditTransfer,
   },
   {
@@ -61,7 +61,7 @@ const STEPS: Step[] = [
   {
     kicker: "The point",
     title: "Fair isn't always 50/50. Fair is knowing.",
-    body: "This isn't about tallying favors in a marriage. It's about giving each of you real, guilt-free space to be a person again — without either of you quietly carrying a debt the other can't see. Track it once, and you can stop keeping score in your head.",
+    body: "This isn't about tallying favors. It's about giving each of you real, guilt-free room to be a person again — to be you — without either quietly carrying a debt the other can't see. Track it once, and you can stop keeping score in your head.",
     Icon: IconFairBalance,
   },
 ];
@@ -89,7 +89,7 @@ export default function HowItWorksPage() {
           <div className="flex items-center gap-3">
             <AppLogo />
             <div>
-              <h1 className={APP_TITLE_CLASS}>Parental PTO</h1>
+              <h1 className={APP_TITLE_CLASS}>MyTO</h1>
               <p className="label-tag text-muted-foreground text-[10px]">
                 Rev 1.0 · Field guide
               </p>

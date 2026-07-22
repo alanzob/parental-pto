@@ -19,7 +19,7 @@ export function CalendarFeedCallout({ feedToken }: { feedToken: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="label-tag">Our Parental PTO Calendar</CardTitle>
+        <CardTitle className="label-tag">Our MyTO Calendar</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         <p className="text-muted-foreground text-sm">

@@ -442,7 +442,7 @@ export function SettingsClient({
                   whenever they&apos;re ready.
                 </>
               ) : (
-                "If your partner isn't going to use Parental PTO, you can still track time on their behalf. It's a less optimal way to use this — there's no one to actually check your requests, so they bank automatically — but it can still be a useful tool for noticing patterns in a healthy relationship."
+                "If your partner isn't going to use MyTO, you can still track time on their behalf. It's a lighter way to use this — there's no one to actually check your requests, so they bank automatically — but it's still a useful way to notice patterns and protect your time to be you."
               )}
             </CardDescription>
           </CardHeader>

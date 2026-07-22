@@ -40,7 +40,7 @@ export function buildIcsFeed(
   });
 
   return createEvents(events, {
-    calName: `${householdName} — Parental PTO`,
-    productId: "-//Parental PTO//EN",
+    calName: `${householdName} — MyTO`,
+    productId: "-//MyTO//EN",
   });
 }

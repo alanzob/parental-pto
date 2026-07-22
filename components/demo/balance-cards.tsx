@@ -29,7 +29,7 @@ export function BalanceCards() {
                 {isInfinite ? "∞" : `${fullDays}d ${hours}h`}
               </p>
               <p className="text-muted-foreground font-mono text-sm">
-                {isInfinite ? "UNLIMITED NO PARENTING" : formatDuration(fullDays, hours)} banked
+                {isInfinite ? "UNLIMITED ME-TIME" : formatDuration(fullDays, hours)} banked
               </p>
             </CardContent>
           </Card>

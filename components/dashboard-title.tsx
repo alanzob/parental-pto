@@ -9,7 +9,7 @@ export function DashboardTitle() {
   return (
     <div className="flex items-center gap-3">
       <AppLogo onClick={registerClick} />
-      <h1 className={APP_TITLE_CLASS}>Parental PTO</h1>
+      <h1 className={APP_TITLE_CLASS}>MyTO</h1>
     </div>
   );
 }

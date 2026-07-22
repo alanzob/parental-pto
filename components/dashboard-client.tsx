@@ -326,17 +326,24 @@ export function DashboardClient({
       {household.partner_mode === "manual" && (
         <Card className="border-dashed">
           <CardHeader>
-            <CardTitle>Tracking solo, on behalf of {partner?.display_name ?? "your partner"}</CardTitle>
+            <CardTitle>
+              Tracking solo, on{" "}
+              <span className="text-foreground font-medium">
+                {partner?.display_name ?? "your partner"}
+              </span>
+              &apos;s behalf
+            </CardTitle>
             <CardDescription>
-              {partner?.display_name ?? "Your partner"} isn&apos;t using Parental PTO, so
-              requests bank automatically — there&apos;s no one else here to check them. That
-              makes this a less complete way to use the tool, since your partner isn&apos;t
-              actually weighing in, but it can still help you notice a pattern and make the
-              case for time to yourself.{" "}
+              <span className="text-foreground font-medium">
+                {partner?.display_name ?? "Your partner"}
+              </span>{" "}
+              isn&apos;t on MyTO, so your requests bank automatically — there&apos;s no one else
+              here to weigh in. It&apos;s a lighter way to use it, but still a good way to spot the
+              pattern and make the case for time to be you.{" "}
               <Link href="/dashboard/settings" className="underline">
                 Invite them for real
               </Link>{" "}
-              whenever they&apos;re ready — it&apos;s a better way to use this together.
+              whenever they&apos;re ready — it&apos;s better together.
             </CardDescription>
           </CardHeader>
         </Card>

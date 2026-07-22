@@ -14,12 +14,12 @@ export function otherPerson(person: DemoPerson): DemoPerson {
 export type DemoRequest = {
   id: string;
   title: string;
-  /** Who took the time away from parenting. */
+  /** Who took the time off to be themselves. */
   requestedBy: DemoPerson;
   /** The partner who banks the equivalent credit once approved. */
   creditedTo: DemoPerson;
-  offDutyStart: string; // ISO datetime — when this person goes off duty
-  backOnDuty: string; // ISO datetime — when they resume parenting
+  offDutyStart: string; // ISO datetime — when this person clocks out
+  backOnDuty: string; // ISO datetime — when they're back on duty
   fullDays: number;
   hours: number;
   status: "pending" | "approved" | "denied" | "cancelled";

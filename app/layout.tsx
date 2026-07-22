@@ -28,8 +28,9 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Parental PTO",
-  description: "A shared PTO ledger for two-parent households",
+  title: "MyTO — time to be you",
+  description:
+    "MyTO (my time off): a shared ledger for two people who trade off, so you can reclaim the time to be you. Especially for parents, who need it most.",
 };
 
 export const viewport: Viewport = {

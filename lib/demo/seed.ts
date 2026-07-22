@@ -1,6 +1,7 @@
 import { computeDuration, type DemoPerson, type DemoRequest } from "./types";
 
-// A believable ~15 months of a two-parent household trading off time.
+// A believable ~15 months of two people trading off time so each can be
+// themselves for a bit (parents most of all).
 //
 // Each entry has an explicit start-of-day time and a duration that actually
 // fits its title: evenings happen in the evening, overnights cross midnight,
