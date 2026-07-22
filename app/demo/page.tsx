@@ -138,8 +138,11 @@ function DemoShell() {
       <NewRequestDialog key={nonce} open={dialogOpen} onOpenChange={setDialogOpen} />
 
       <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-center px-4 py-3">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-center gap-3 px-4 py-3">
           <CoffeeLink />
+          <Link href="/privacy" className="text-muted-foreground hover:text-foreground text-xs underline">
+            Privacy
+          </Link>
         </div>
       </footer>
     </div>

@@ -29,6 +29,10 @@ export default function LoginPage() {
   const [signUpPassword, setSignUpPassword] = useState("");
   const [signingUp, setSigningUp] = useState(false);
 
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [sendingReset, setSendingReset] = useState(false);
+
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
     setSigningIn(true);
@@ -42,6 +46,18 @@ export default function LoginPage() {
       return;
     }
     window.location.href = "/dashboard";
+  }
+
+  async function requestReset(e: React.FormEvent) {
+    e.preventDefault();
+    setSendingReset(true);
+    await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSendingReset(false);
+    // Same message either way — don't reveal whether the email has an account.
+    toast.success("If that email has an account, a reset link is on its way.");
+    setForgotMode(false);
   }
 
   async function signUp(e: React.FormEvent) {
@@ -103,34 +119,73 @@ export default function LoginPage() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="signin">
-              <form onSubmit={signIn} className="space-y-3 pt-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    value={signInEmail}
-                    onChange={(e) => setSignInEmail(e.target.value)}
-                    placeholder="you@example.com"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    required
-                    autoComplete="current-password"
-                    value={signInPassword}
-                    onChange={(e) => setSignInPassword(e.target.value)}
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={signingIn}>
-                  {signingIn ? "Signing in…" : "Sign in"}
-                </Button>
-              </form>
+              {forgotMode ? (
+                <form onSubmit={requestReset} className="space-y-3 pt-2">
+                  <p className="text-muted-foreground text-sm">
+                    Enter your account email and we&apos;ll send a link to reset your password.
+                  </p>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="forgot-email">Email</Label>
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={sendingReset}>
+                    {sendingReset ? "Sending…" : "Send reset link"}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setForgotMode(false)}
+                    className="text-muted-foreground hover:text-foreground w-full text-center text-sm underline"
+                  >
+                    Back to sign in
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={signIn} className="space-y-3 pt-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={signInEmail}
+                      onChange={(e) => setSignInEmail(e.target.value)}
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="signin-password">Password</Label>
+                      <button
+                        type="button"
+                        onClick={() => setForgotMode(true)}
+                        className="text-muted-foreground hover:text-foreground text-xs underline"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      required
+                      autoComplete="current-password"
+                      value={signInPassword}
+                      onChange={(e) => setSignInPassword(e.target.value)}
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={signingIn}>
+                    {signingIn ? "Signing in…" : "Sign in"}
+                  </Button>
+                </form>
+              )}
             </TabsContent>
             <TabsContent value="signup">
               <form onSubmit={signUp} className="space-y-3 pt-2">
@@ -178,6 +233,9 @@ export default function LoginPage() {
       <div className="flex items-center gap-3">
         <HighContrastToggle />
         <CoffeeLink />
+        <Link href="/privacy" className="text-muted-foreground hover:text-foreground text-xs underline">
+          Privacy
+        </Link>
       </div>
     </div>
   );

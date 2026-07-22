@@ -28,6 +28,8 @@ export default async function DashboardLayout({
 
   if (!profile?.household_id) redirect("/onboarding");
 
+  const isAdmin = !!process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL;
+
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <header className="border-b">
@@ -52,6 +54,14 @@ export default async function DashboardLayout({
             >
               How it works
             </Link>
+            {isAdmin && (
+              <Link
+                href="/dashboard/admin"
+                className={buttonVariants({ variant: "ghost", size: "sm" })}
+              >
+                Admin
+              </Link>
+            )}
             <HighContrastToggle />
             <SignOutButton />
           </nav>
@@ -60,6 +70,7 @@ export default async function DashboardLayout({
               <MobileNavLink href="/dashboard">Dashboard</MobileNavLink>
               <MobileNavLink href="/dashboard/settings">Settings</MobileNavLink>
               <MobileNavLink href="/how-it-works">How it works</MobileNavLink>
+              {isAdmin && <MobileNavLink href="/dashboard/admin">Admin</MobileNavLink>}
               <MobileNavRow>
                 <HighContrastToggle />
               </MobileNavRow>
@@ -74,8 +85,11 @@ export default async function DashboardLayout({
         {children}
       </main>
       <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-center px-4 py-3">
+        <div className="mx-auto flex w-full max-w-4xl items-center justify-center gap-3 px-4 py-3">
           <CoffeeLink />
+          <Link href="/privacy" className="text-muted-foreground hover:text-foreground text-xs underline">
+            Privacy
+          </Link>
         </div>
       </footer>
     </div>

@@ -6,6 +6,14 @@ import { createClient } from "@/lib/supabase/client";
 import { generateInviteCode } from "@/lib/invite-code";
 import type { Household, Invitation, Profile } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,6 +60,10 @@ export function SettingsClient({
   const [manualPartnerName, setManualPartnerName] = useState(household.manual_partner_name ?? "");
   const [savingManualPartner, setSavingManualPartner] = useState(false);
   const [removingManualPartner, setRemovingManualPartner] = useState(false);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -168,6 +180,18 @@ export function SettingsClient({
     }
     toast.success("Removed. Past history stays on the record.");
     router.refresh();
+  }
+
+  async function deleteAccount() {
+    setDeletingAccount(true);
+    const { error } = await supabase.rpc("delete_my_account");
+    if (error) {
+      setDeletingAccount(false);
+      toast.error(error.message);
+      return;
+    }
+    await supabase.auth.signOut();
+    window.location.href = "/login";
   }
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -505,6 +529,53 @@ export function SettingsClient({
           </Button>
         </CardFooter>
       </Card>
+
+      <Card className="border-destructive/30">
+        <CardHeader>
+          <CardTitle>Danger zone</CardTitle>
+          <CardDescription>
+            Deletes your login and profile immediately. If you have a partner, their own balance
+            and history stay intact — this only removes your account.
+          </CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+            Delete my account
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) setDeleteConfirmText("");
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete your account?</DialogTitle>
+            <DialogDescription>
+              This can&apos;t be undone. Type DELETE below to confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            placeholder="DELETE"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button
+              variant="destructive"
+              disabled={deleteConfirmText !== "DELETE" || deletingAccount}
+              onClick={deleteAccount}
+            >
+              {deletingAccount ? "Deleting…" : "Delete my account"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
