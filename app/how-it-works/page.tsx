@@ -88,7 +88,12 @@ export default function HowItWorksPage() {
         <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-3">
             <AppLogo />
-            <h1 className={APP_TITLE_CLASS}>Parental PTO</h1>
+            <div>
+              <h1 className={APP_TITLE_CLASS}>Parental PTO</h1>
+              <p className="label-tag text-muted-foreground text-[10px]">
+                Rev 1.0 · Field guide
+              </p>
+            </div>
           </div>
           <Link href="/login" className="text-muted-foreground hover:text-foreground text-sm underline">
             Skip

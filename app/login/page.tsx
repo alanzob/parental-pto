@@ -6,15 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AuthShell, AuthFooterLinks, AuthFooterLink } from "@/components/brand/auth-shell";
 import { CoffeeLink } from "@/components/coffee-link";
 import { HighContrastToggle } from "@/components/high-contrast-toggle";
 import { toast } from "sonner";
@@ -96,20 +89,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 p-4">
-      <Link
-        href="/how-it-works"
-        className="border-border bg-accent text-accent-foreground hover:bg-accent/70 flex items-center gap-1.5 border px-3 py-1.5 text-sm"
-      >
-        New here? See how it works &rarr;
-      </Link>
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Parental PTO</CardTitle>
-          <CardDescription>Sign in or create an account.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin">
+    <AuthShell>
+      <p className="label-tag text-muted-foreground mb-2">Account</p>
+      <h2 className="font-heading mb-1 text-2xl font-medium">Sign in or create one</h2>
+      <p className="text-muted-foreground mb-5 text-sm">
+        New here?{" "}
+        <Link href="/how-it-works" className="text-foreground underline">
+          See how it works
+        </Link>
+        .
+      </p>
+      <Tabs defaultValue="signin">
             <TabsList className="w-full">
               <TabsTrigger value="signin" className="flex-1">
                 Sign in
@@ -218,25 +208,21 @@ export default function LoginPage() {
                 </Button>
               </form>
             </TabsContent>
-          </Tabs>
-        </CardContent>
-        <CardFooter>
-          <p className="text-sm">
-            Just want to see it in action?{" "}
-            <Link href="/demo" className="underline">
-              Try the demo
-            </Link>{" "}
-            — no login needed.
-          </p>
-        </CardFooter>
-      </Card>
-      <div className="flex items-center gap-3">
+      </Tabs>
+
+      <p className="text-muted-foreground mt-5 text-sm">
+        Just want to see it in action?{" "}
+        <Link href="/demo" className="text-foreground underline">
+          Try the demo
+        </Link>{" "}
+        — no login needed.
+      </p>
+
+      <AuthFooterLinks>
+        <AuthFooterLink href="/privacy">Privacy</AuthFooterLink>
         <HighContrastToggle />
         <CoffeeLink />
-        <Link href="/privacy" className="text-muted-foreground hover:text-foreground text-xs underline">
-          Privacy
-        </Link>
-      </div>
-    </div>
+      </AuthFooterLinks>
+    </AuthShell>
   );
 }

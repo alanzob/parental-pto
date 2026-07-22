@@ -5,14 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AuthShell } from "@/components/brand/auth-shell";
 import { QuickStartFlow } from "./quick-start-flow";
 import { toast } from "sonner";
 
@@ -67,17 +61,14 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Set up your household</CardTitle>
-          <CardDescription>
-            Quick start sets up both of you at once. Or create solo and invite
-            later, or join your partner&apos;s household with a code.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue={initialCode ? "join" : "quick-start"}>
+    <AuthShell spec={["Step 1 of 1", "Pair your household", "Two people, one ledger"]}>
+      <p className="label-tag text-muted-foreground mb-2">Set up</p>
+      <h2 className="font-heading mb-1 text-2xl font-medium">Set up your household</h2>
+      <p className="text-muted-foreground mb-5 text-sm">
+        Quick start sets up both of you at once — or create solo and invite later, or join with a
+        code.
+      </p>
+      <Tabs defaultValue={initialCode ? "join" : "quick-start"}>
             <TabsList className="w-full">
               <TabsTrigger value="quick-start" className="flex-1">
                 Quick start
@@ -123,9 +114,7 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
                 </Button>
               </form>
             </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+      </Tabs>
+    </AuthShell>
   );
 }
