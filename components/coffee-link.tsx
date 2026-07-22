@@ -1,5 +1,4 @@
-// TODO: replace YOUR_USERNAME_HERE with your real Buy Me a Coffee username.
-const COFFEE_URL = "https://buymeacoffee.com/YOUR_USERNAME_HERE";
+const COFFEE_URL = "https://buymeacoffee.com/alanzob";
 
 export function CoffeeLink({ className = "" }: { className?: string }) {
   return (
