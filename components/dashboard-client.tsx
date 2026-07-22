@@ -10,13 +10,15 @@ import { RequestsList } from "@/components/requests-list";
 import { RequestPtoDialog } from "@/components/request-pto-dialog";
 import { PtoCalendarHeatmap, type HeatmapEntry } from "@/components/pto/calendar-heatmap";
 import { ComparativeStats, type StatRow } from "@/components/pto/comparative-stats";
+import { BalanceDisparityChart } from "@/components/pto/balance-disparity-chart";
+import { computeDisparitySeries, type DisparityEvent } from "@/lib/pto/disparity";
 import { CalendarFeedCallout } from "@/components/calendar-feed-callout";
 import { ResearchNotesWidget } from "@/components/pto/research-notes-widget";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
-type PersonRef = { id: string; display_name: string | null };
+type PersonRef = { id: string | null; display_name: string | null };
 
 export function DashboardClient({
   me,
@@ -64,10 +66,10 @@ export function DashboardClient({
 
   const statsRows = useMemo<StatRow[]>(() => {
     if (!partner) return [];
-    const countBy = (userId: string, field: "initiated_by" | "user_id", status: string) =>
+    const countBy = (userId: string | null, field: "initiated_by" | "user_id", status: string) =>
       requests.filter((r) => r[field] === userId && r.status === status).length;
 
-    const hoursOffFor = (userId: string) =>
+    const hoursOffFor = (userId: string | null) =>
       requests
         .filter((r) => r.initiated_by === userId && r.status === "approved")
         .reduce((sum, r) => sum + r.base_hours, 0);
@@ -101,6 +103,18 @@ export function DashboardClient({
     ];
   }, [requests, me.id, partner, myBalance, partnerBalance]);
 
+  const disparityPoints = useMemo(() => {
+    if (!partner) return [];
+    const events: DisparityEvent[] = requests
+      .filter((r) => r.status === "approved")
+      .map((r) => ({
+        date: new Date(r.occurred_at),
+        hours: r.final_cost,
+        favorsB: r.user_id === partner.id,
+      }));
+    return computeDisparitySeries(events);
+  }, [requests, partner]);
+
   const statsFooter = partner
     ? `Δ ${Math.abs(partnerBalance - myBalance).toFixed(1)}H ${
         partnerBalance - myBalance >= 0
@@ -126,9 +140,11 @@ export function DashboardClient({
       return false;
     }
     toast.success(
-      partner
-        ? `Sent to ${partner.display_name ?? "your partner"} for approval.`
-        : "Request submitted.",
+      household.partner_mode === "manual"
+        ? "Logged and banked — approved automatically, since it's just you tracking this."
+        : partner
+          ? `Sent to ${partner.display_name ?? "your partner"} for approval.`
+          : "Request submitted.",
     );
     router.refresh();
     return true;
@@ -169,6 +185,25 @@ export function DashboardClient({
         </Card>
       )}
 
+      {household.partner_mode === "manual" && (
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle>Tracking solo, on behalf of {partner?.display_name ?? "your partner"}</CardTitle>
+            <CardDescription>
+              {partner?.display_name ?? "Your partner"} isn&apos;t using Parental PTO, so
+              requests bank automatically — there&apos;s no one else here to check them. That
+              makes this a less complete way to use the tool, since your partner isn&apos;t
+              actually weighing in, but it can still help you notice a pattern and make the
+              case for time to yourself.{" "}
+              <Link href="/dashboard/settings" className="underline">
+                Invite them for real
+              </Link>{" "}
+              whenever they&apos;re ready — it&apos;s a better way to use this together.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
       <div className="flex flex-wrap gap-2">
         <Button
           onClick={() => {
@@ -201,6 +236,14 @@ export function DashboardClient({
           labelB={partner.display_name ?? "Partner"}
           rows={statsRows}
           footer={statsFooter}
+        />
+      )}
+
+      {partner && (
+        <BalanceDisparityChart
+          points={disparityPoints}
+          labelA="You"
+          labelB={partner.display_name ?? "Partner"}
         />
       )}
 

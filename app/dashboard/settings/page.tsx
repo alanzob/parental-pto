@@ -18,20 +18,24 @@ export default async function SettingsPage() {
 
   if (!profile?.household_id) redirect("/onboarding");
 
-  const [{ data: household }, { data: invitations }] = await Promise.all([
+  const [{ data: household }, { data: invitations }, { data: profiles }] = await Promise.all([
     supabase.from("households").select("*").eq("id", profile.household_id).single(),
     supabase
       .from("invitations")
       .select("*")
       .eq("household_id", profile.household_id)
       .order("created_at", { ascending: false }),
+    supabase.from("profiles").select("id").eq("household_id", profile.household_id),
   ]);
+
+  const hasRealPartner = (profiles ?? []).some((p) => p.id !== user.id);
 
   return (
     <SettingsClient
       me={profile}
       household={household!}
       invitations={invitations ?? []}
+      hasRealPartner={hasRealPartner}
     />
   );
 }

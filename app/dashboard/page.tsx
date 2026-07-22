@@ -41,7 +41,12 @@ export default async function DashboardPage() {
         .limit(50),
     ]);
 
-  const partner = (profiles ?? []).find((p) => p.id !== user.id) ?? null;
+  const realPartner = (profiles ?? []).find((p) => p.id !== user.id) ?? null;
+  const partner =
+    realPartner ??
+    (household?.partner_mode === "manual"
+      ? { id: null, display_name: household.manual_partner_name }
+      : null);
   const me = (profiles ?? []).find((p) => p.id === user.id) ?? profile;
 
   return (

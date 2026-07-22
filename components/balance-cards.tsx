@@ -2,7 +2,7 @@ import { formatCompactDuration, normalizeDuration } from "@/lib/duration";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-type PersonRef = { id: string; display_name: string | null };
+type PersonRef = { id: string | null; display_name: string | null };
 
 function signedDuration(hours: number): string {
   const { fullDays, hours: rem } = normalizeDuration(Math.abs(hours));

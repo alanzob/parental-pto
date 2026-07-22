@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-type PersonRef = { id: string; display_name: string | null };
+type PersonRef = { id: string | null; display_name: string | null };
 
 function fmt(date: Date): string {
   return date.toLocaleString(undefined, {
@@ -36,7 +36,7 @@ export function RequestsList({
     );
   }
 
-  function nameFor(userId: string) {
+  function nameFor(userId: string | null) {
     if (userId === me.id) return "You";
     if (partner && userId === partner.id) return partner.display_name ?? "Partner";
     return "—";

@@ -34,4 +34,12 @@ export const RESEARCH_NOTES: ResearchNote[] = [
     text: "When both partners feel their time off is equally protected, resentment tied to caregiving responsibilities tends to drop.",
     source: "Family systems research",
   },
+  {
+    text: "The happiest couples don't necessarily split time off exactly evenly — what predicts satisfaction is how quickly an imbalance gets noticed and corrected, not whether one ever appears.",
+    source: "Relational equity research",
+  },
+  {
+    text: "Responsiveness — one partner adjusting when the other is running low — is a stronger predictor of relationship quality than any fixed formula for splitting time.",
+    source: "The Gottman Institute",
+  },
 ];

@@ -18,10 +18,12 @@ export function SettingsClient({
   me,
   household,
   invitations,
+  hasRealPartner,
 }: {
   me: Pick<Profile, "id" | "household_id" | "display_name">;
   household: Household;
   invitations: Invitation[];
+  hasRealPartner: boolean;
 }) {
   const supabase = createClient();
   const router = useRouter();
@@ -46,6 +48,10 @@ export function SettingsClient({
   const [feedToken, setFeedToken] = useState(household.calendar_feed_token);
   const [regenerating, setRegenerating] = useState(false);
   const [generatingInvite, setGeneratingInvite] = useState(false);
+
+  const [manualPartnerName, setManualPartnerName] = useState(household.manual_partner_name ?? "");
+  const [savingManualPartner, setSavingManualPartner] = useState(false);
+  const [removingManualPartner, setRemovingManualPartner] = useState(false);
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -132,6 +138,36 @@ export function SettingsClient({
   function copy(text: string) {
     navigator.clipboard.writeText(text);
     toast.success("Copied.");
+  }
+
+  async function saveManualPartner(e: React.FormEvent) {
+    e.preventDefault();
+    if (!manualPartnerName.trim()) return;
+    setSavingManualPartner(true);
+    const { error } = await supabase.rpc("add_manual_partner", {
+      p_name: manualPartnerName.trim(),
+    });
+    setSavingManualPartner(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(
+      household.partner_mode === "manual" ? "Updated." : "Added — requests will auto-approve.",
+    );
+    router.refresh();
+  }
+
+  async function removeManualPartner() {
+    setRemovingManualPartner(true);
+    const { error } = await supabase.rpc("remove_manual_partner");
+    setRemovingManualPartner(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Removed. Past history stays on the record.");
+    router.refresh();
   }
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -358,6 +394,67 @@ export function SettingsClient({
           </Button>
         </CardFooter>
       </Card>
+
+      {!hasRealPartner && (
+        <Card className={household.partner_mode === "manual" ? "" : "border-dashed"}>
+          <CardHeader>
+            <CardTitle>
+              {household.partner_mode === "manual"
+                ? "Manual partner"
+                : "Or, add them manually instead"}
+            </CardTitle>
+            <CardDescription>
+              {household.partner_mode === "manual" ? (
+                <>
+                  You&apos;re tracking time on behalf of{" "}
+                  <strong className="text-foreground font-medium">
+                    {household.manual_partner_name}
+                  </strong>{" "}
+                  without them using the app. Requests bank automatically, since there&apos;s no
+                  one else here to approve them — a less complete way to use this tool, since
+                  your partner isn&apos;t actually weighing in, but still useful for noticing a
+                  pattern and making the case for time to yourself. For the full experience —
+                  real approvals, not auto-approval — invite them for real with the code above
+                  whenever they&apos;re ready.
+                </>
+              ) : (
+                "If your partner isn't going to use Parental PTO, you can still track time on their behalf. It's a less optimal way to use this — there's no one to actually check your requests, so they bank automatically — but it can still be a useful tool for noticing patterns in a healthy relationship."
+              )}
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={saveManualPartner}>
+            <CardContent className="space-y-1.5">
+              <Label htmlFor="manual-partner-name">Their name</Label>
+              <Input
+                id="manual-partner-name"
+                value={manualPartnerName}
+                onChange={(e) => setManualPartnerName(e.target.value)}
+                placeholder="e.g. Alex"
+              />
+            </CardContent>
+            <CardFooter className="gap-2">
+              <Button type="submit" size="sm" disabled={savingManualPartner}>
+                {savingManualPartner
+                  ? "Saving…"
+                  : household.partner_mode === "manual"
+                    ? "Update name"
+                    : "Add manually"}
+              </Button>
+              {household.partner_mode === "manual" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeManualPartner}
+                  disabled={removingManualPartner}
+                >
+                  {removingManualPartner ? "Removing…" : "Remove"}
+                </Button>
+              )}
+            </CardFooter>
+          </form>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
