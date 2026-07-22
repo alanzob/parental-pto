@@ -66,7 +66,10 @@ function DemoShell() {
           <Button variant="outline" onClick={reset}>
             Reset demo data
           </Button>
-          <Link href="/login" className="ml-auto self-center text-sm underline">
+          <Link href="/how-it-works" className="ml-auto self-center text-sm underline">
+            How it works
+          </Link>
+          <Link href="/login" className="self-center text-sm underline">
             Exit demo
           </Link>
         </div>

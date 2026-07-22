@@ -45,6 +45,12 @@ export default async function DashboardLayout({
             >
               Settings
             </Link>
+            <Link
+              href="/how-it-works"
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
+            >
+              How it works
+            </Link>
             <HighContrastToggle />
             <SignOutButton />
           </nav>

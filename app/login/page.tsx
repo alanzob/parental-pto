@@ -81,6 +81,12 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 p-4">
+      <Link
+        href="/how-it-works"
+        className="border-border bg-accent text-accent-foreground hover:bg-accent/70 flex items-center gap-1.5 border px-3 py-1.5 text-sm"
+      >
+        New here? See how it works &rarr;
+      </Link>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Parental PTO</CardTitle>
