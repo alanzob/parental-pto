@@ -1,61 +1,74 @@
 import { computeDuration, type DemoPerson, type DemoRequest } from "./types";
 
-// A damped oscillation, not a straight line: wide, dramatic swings while
-// nobody's watching the balance, narrowing over time as both partners start
-// reacting to it sooner — the point isn't to land exactly on zero, it's to
-// stop letting the gap run unchecked. Hours are the credited amount per
-// event; "person" is whoever goes off duty (their partner banks the credit).
-// Dates are computed relative to "now" at generation time, not hardcoded,
-// so the demo never looks stale.
-const SEED_EVENTS: { title: string; person: DemoPerson; hours: number; daysAgo: number }[] = [
-  // Leg 1: climbs to +24 favoring Vanda — Brian's away a lot, nobody's tracking it yet.
-  { title: "Guys' fishing weekend", person: "brian", hours: 8, daysAgo: 462 },
-  { title: "Work conference out of town", person: "brian", hours: 9, daysAgo: 446 },
-  { title: "Golf trip with college friends", person: "brian", hours: 7, daysAgo: 429 },
-  // Leg 2: swings all the way to -24 favoring Brian — the overcorrection.
-  { title: "Solo trip to recharge", person: "vanda", hours: 20, daysAgo: 412 },
-  { title: "Weekend hiking retreat with friends", person: "vanda", hours: 18, daysAgo: 394 },
-  { title: "Visit her sister for a long weekend", person: "vanda", hours: 10, daysAgo: 377 },
-  // Leg 3: back up, smaller peak (+18) — the swings start narrowing.
-  { title: "Overnight work trip", person: "brian", hours: 14, daysAgo: 360 },
-  { title: "Bachelor party for his brother", person: "brian", hours: 16, daysAgo: 343 },
-  { title: "Fantasy football draft weekend", person: "brian", hours: 12, daysAgo: 326 },
-  // Leg 4: down to -16.
-  { title: "Spa weekend with her mom", person: "vanda", hours: 19, daysAgo: 309 },
-  { title: "Girls' trip to the coast", person: "vanda", hours: 15, daysAgo: 292 },
-  // Leg 5: up to +11.
-  { title: "Camping trip with buddies", person: "brian", hours: 15, daysAgo: 275 },
-  { title: "Work off-site", person: "brian", hours: 12, daysAgo: 258 },
-  // Leg 6: down to -9.
-  { title: "Yoga retreat", person: "vanda", hours: 11, daysAgo: 241 },
-  { title: "Visit her college roommate", person: "vanda", hours: 9, daysAgo: 224 },
-  // Leg 7: up to +6.
-  { title: "Concert weekend with friends", person: "brian", hours: 9, daysAgo: 207 },
-  { title: "Half-day golf outing", person: "brian", hours: 6, daysAgo: 190 },
-  // Leg 8: down to -5.
-  { title: "Overnight girls' trip", person: "vanda", hours: 6, daysAgo: 173 },
-  { title: "Afternoon spa break", person: "vanda", hours: 5, daysAgo: 156 },
-  // Legs 9-12: small, frequent, reactive — this is the healthy steady state.
-  { title: "Quick guys' night away", person: "brian", hours: 8, daysAgo: 139 },
-  { title: "Morning off with friends", person: "vanda", hours: 5, daysAgo: 112 },
-  { title: "Evening out with friends", person: "brian", hours: 4, daysAgo: 62 },
-  { title: "Quiet afternoon alone", person: "vanda", hours: 3, daysAgo: 14 },
+// A believable ~15 months of a two-parent household trading off time.
+//
+// Each entry has an explicit start-of-day time and a duration that actually
+// fits its title: evenings happen in the evening, overnights cross midnight,
+// the two-night trips read as "1 Full Day, 20 Hours". Times are varied (not
+// all stamped with the generation clock), the mix isn't gender-coded, and the
+// spacing is uneven — clustered early, spreading out as the couple find a
+// rhythm.
+//
+// The cumulative "who's owed" disparity still tells the intended arc: it
+// swings hard early (a rough stretch where one partner is away a lot, then an
+// over-correction the other way) and damps into small, frequent, reciprocal
+// breaks that hover near even — making time for each other to make time for
+// themselves. "person" is whoever goes off duty; their partner banks the
+// credit. Dates are computed relative to now so the demo never goes stale.
+type SeedEntry = {
+  title: string;
+  person: DemoPerson;
+  startHour: number;
+  startMin: number;
+  durationHours: number;
+  daysAgo: number;
+};
+
+const SEED_ENTRIES: SeedEntry[] = [
+  // Leg 1 — Brian's away a lot (new-role travel stretch): climbs steeply.
+  { title: "Work conference — Austin", person: "brian", startHour: 17, startMin: 0, durationHours: 44, daysAgo: 451 },
+  // Leg 2 — Vanda evens it out, then overshoots the other way.
+  { title: "Weekend at her sister's", person: "vanda", startHour: 16, startMin: 0, durationHours: 44, daysAgo: 436 },
+  { title: "Priya's wedding — stayed over", person: "vanda", startHour: 15, startMin: 0, durationHours: 16, daysAgo: 421 },
+  { title: "Solo overnight to recharge", person: "vanda", startHour: 16, startMin: 0, durationHours: 16, daysAgo: 406 },
+  { title: "Morning hike + brunch", person: "vanda", startHour: 7, startMin: 30, durationHours: 5, daysAgo: 392 },
+  // Leg 3 — Brian's turn, a smaller peak.
+  { title: "Work conference — Denver", person: "brian", startHour: 17, startMin: 0, durationHours: 44, daysAgo: 372 },
+  { title: "Jaime's birthday dinner", person: "brian", startHour: 18, startMin: 30, durationHours: 6, daysAgo: 356 },
+  { title: "Pickup soccer + beers after", person: "brian", startHour: 9, startMin: 0, durationHours: 6, daysAgo: 341 },
+  // Leg 4 — Vanda drifts back down; the swings start narrowing.
+  { title: "Work trip — Portland", person: "vanda", startHour: 18, startMin: 0, durationHours: 14, daysAgo: 322 },
+  { title: "Pottery class + coffee", person: "vanda", startHour: 10, startMin: 0, durationHours: 6, daysAgo: 305 },
+  { title: "Dinner and a late movie", person: "vanda", startHour: 18, startMin: 30, durationHours: 5, daysAgo: 288 },
+  { title: "Museum afternoon, solo", person: "vanda", startHour: 13, startMin: 0, durationHours: 4, daysAgo: 270 },
+  { title: "Book club", person: "vanda", startHour: 19, startMin: 0, durationHours: 4, daysAgo: 251 },
+  // Leg 5 — Brian nudges back toward even.
+  { title: "Concert at the Fillmore", person: "brian", startHour: 19, startMin: 30, durationHours: 5, daysAgo: 230 },
+  { title: "Dentist, then errands", person: "brian", startHour: 13, startMin: 0, durationHours: 4, daysAgo: 208 },
+  { title: "Drinks with the team", person: "brian", startHour: 18, startMin: 0, durationHours: 5, daysAgo: 183 },
+  { title: "Long morning run", person: "brian", startHour: 7, startMin: 0, durationHours: 3, daysAgo: 157 },
+  // Settled rhythm — small, frequent, reciprocal.
+  { title: "Spa afternoon", person: "vanda", startHour: 13, startMin: 30, durationHours: 4, daysAgo: 126 },
+  { title: "Dinner with old friends", person: "brian", startHour: 19, startMin: 0, durationHours: 4, daysAgo: 96 },
+  { title: "Afternoon to read", person: "vanda", startHour: 14, startMin: 0, durationHours: 3, daysAgo: 64 },
+  { title: "Coffee and record shopping", person: "brian", startHour: 10, startMin: 0, durationHours: 3, daysAgo: 33 },
+  { title: "Quiet morning to herself", person: "vanda", startHour: 8, startMin: 0, durationHours: 3, daysAgo: 12 },
 ];
 
-// A couple of small requests still awaiting the other partner's approval —
-// shows the inbox mid-use rather than everything pre-settled.
-const PENDING_EVENTS: { title: string; person: DemoPerson; hours: number; daysFromNow: number }[] = [
-  { title: "Half-day off for a dentist marathon", person: "brian", hours: 4, daysFromNow: 3 },
-  { title: "Afternoon to herself", person: "vanda", hours: 3, daysFromNow: 6 },
+// A couple of small requests still on the books, awaiting the other partner.
+const PENDING_ENTRIES: (Omit<SeedEntry, "daysAgo"> & { daysFromNow: number })[] = [
+  { title: "Half-day for a dentist appointment", person: "brian", startHour: 13, startMin: 0, durationHours: 4, daysFromNow: 4 },
+  { title: "Afternoon to herself", person: "vanda", startHour: 13, startMin: 30, durationHours: 3, daysFromNow: 8 },
 ];
 
 function otherOf(p: DemoPerson): DemoPerson {
   return p === "brian" ? "vanda" : "brian";
 }
 
-function addDays(base: Date, days: number): Date {
+function atDay(base: Date, dayOffset: number, hour: number, min: number): Date {
   const d = new Date(base);
-  d.setDate(d.getDate() + days);
+  d.setDate(d.getDate() + dayOffset);
+  d.setHours(hour, min, 0, 0);
   return d;
 }
 
@@ -63,9 +76,9 @@ export function seedDemoRequests(): DemoRequest[] {
   const now = new Date();
   const requests: DemoRequest[] = [];
 
-  for (const [i, e] of SEED_EVENTS.entries()) {
-    const offDutyStart = addDays(now, -e.daysAgo);
-    const backOnDuty = new Date(offDutyStart.getTime() + e.hours * 60 * 60 * 1000);
+  for (const [i, e] of SEED_ENTRIES.entries()) {
+    const offDutyStart = atDay(now, -e.daysAgo, e.startHour, e.startMin);
+    const backOnDuty = new Date(offDutyStart.getTime() + e.durationHours * 60 * 60 * 1000);
     const { fullDays, hours } = computeDuration(offDutyStart, backOnDuty);
     requests.push({
       id: `seed-${i}`,
@@ -77,13 +90,14 @@ export function seedDemoRequests(): DemoRequest[] {
       fullDays,
       hours,
       status: "approved",
-      createdAt: addDays(offDutyStart, -18).toISOString(),
+      // Planned a week or two ahead of time.
+      createdAt: atDay(offDutyStart, -12, 9, 0).toISOString(),
     });
   }
 
-  for (const [i, e] of PENDING_EVENTS.entries()) {
-    const offDutyStart = addDays(now, e.daysFromNow);
-    const backOnDuty = new Date(offDutyStart.getTime() + e.hours * 60 * 60 * 1000);
+  for (const [i, e] of PENDING_ENTRIES.entries()) {
+    const offDutyStart = atDay(now, e.daysFromNow, e.startHour, e.startMin);
+    const backOnDuty = new Date(offDutyStart.getTime() + e.durationHours * 60 * 60 * 1000);
     const { fullDays, hours } = computeDuration(offDutyStart, backOnDuty);
     requests.push({
       id: `seed-pending-${i}`,
