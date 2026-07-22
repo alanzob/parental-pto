@@ -5,6 +5,7 @@ import { DashboardTitle } from "@/components/dashboard-title";
 import { SignOutButton } from "@/components/sign-out-button";
 import { CoffeeLink } from "@/components/coffee-link";
 import { HighContrastToggle } from "@/components/high-contrast-toggle";
+import { MobileNav, MobileNavLink, MobileNavRow } from "@/components/ui/mobile-nav";
 import { buttonVariants } from "@/components/ui/button";
 
 export default async function DashboardLayout({
@@ -32,7 +33,7 @@ export default async function DashboardLayout({
       <header className="border-b">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-between px-4 py-3">
           <DashboardTitle />
-          <nav className="flex items-center gap-2">
+          <nav className="hidden items-center gap-2 sm:flex">
             <Link
               href="/dashboard"
               className={buttonVariants({ variant: "ghost", size: "sm" })}
@@ -54,6 +55,19 @@ export default async function DashboardLayout({
             <HighContrastToggle />
             <SignOutButton />
           </nav>
+          <div className="sm:hidden">
+            <MobileNav label="Menu">
+              <MobileNavLink href="/dashboard">Dashboard</MobileNavLink>
+              <MobileNavLink href="/dashboard/settings">Settings</MobileNavLink>
+              <MobileNavLink href="/how-it-works">How it works</MobileNavLink>
+              <MobileNavRow>
+                <HighContrastToggle />
+              </MobileNavRow>
+              <MobileNavRow className="mt-2 border-t pt-3">
+                <SignOutButton />
+              </MobileNavRow>
+            </MobileNav>
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">

@@ -51,8 +51,11 @@ export function RequestsList({
           const duration = formatDuration(Math.floor(r.base_hours / 24), r.base_hours % 24);
           const canRespond = r.status === "pending" && r.user_id === me.id;
           return (
-            <div key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
-              <div>
+            <div
+              key={r.id}
+              className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+            >
+              <div className="min-w-0">
                 <p className="text-sm font-medium">{r.title}</p>
                 <p className="text-muted-foreground font-mono text-xs">
                   {nameFor(r.initiated_by)} off duty {fmt(start)} → back {fmt(end)} ·{" "}

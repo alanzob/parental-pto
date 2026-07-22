@@ -96,13 +96,13 @@ export function PtoCalendarHeatmap({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {months.map(({ year, month }) => (
             <div key={`${year}-${month}`} className="border-border border p-2">
               <p className="label-tag mb-1.5">
                 {new Date(year, month, 1).toLocaleString(undefined, { month: "short" })} {year}
               </p>
-              <div className="text-muted-foreground mb-0.5 grid grid-cols-7 gap-px text-center font-mono text-[9px]">
+              <div className="text-muted-foreground mb-0.5 grid grid-cols-7 gap-px text-center font-mono text-[11px] sm:text-[9px]">
                 {WEEKDAY_LABELS.map((w, i) => (
                   <div key={i}>{w}</div>
                 ))}
@@ -116,7 +116,7 @@ export function PtoCalendarHeatmap({
                     <div
                       key={i}
                       title={day.toLocaleDateString()}
-                      className="border-border/60 flex aspect-square items-center justify-center border font-mono text-[9px]"
+                      className="border-border/60 flex aspect-square items-center justify-center border font-mono text-[11px] sm:text-[9px]"
                       style={{ background: cellBackground(colorA, colorB, a, b) }}
                     >
                       {day.getDate()}

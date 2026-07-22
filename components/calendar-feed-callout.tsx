@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export function CalendarFeedCallout({ feedToken }: { feedToken: string }) {
@@ -27,17 +28,22 @@ export function CalendarFeedCallout({ feedToken }: { feedToken: string }) {
           Subscription&quot;) to see approved requests alongside your own
           calendar.
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input readOnly value={feedUrl} className="font-mono text-xs" />
-          <Button variant="outline" size="sm" onClick={copy}>
-            Copy
-          </Button>
-          <Link
-            href="/dashboard/settings"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            Manage
-          </Link>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={copy} className="flex-1 sm:flex-none">
+              Copy
+            </Button>
+            <Link
+              href="/dashboard/settings"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "flex-1 sm:flex-none",
+              )}
+            >
+              Manage
+            </Link>
+          </div>
         </div>
       </CardContent>
     </Card>

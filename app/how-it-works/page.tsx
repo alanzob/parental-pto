@@ -97,7 +97,7 @@ export default function HowItWorksPage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-4 py-10">
-        <div className="mb-8 flex items-center justify-center gap-2">
+        <div className="mb-8 flex items-center justify-center">
           {STEPS.map((s, i) => (
             <button
               key={s.title}
@@ -105,10 +105,14 @@ export default function HowItWorksPage() {
               aria-label={`Go to step ${i + 1}: ${s.title}`}
               aria-current={i === step}
               onClick={() => setStep(i)}
-              className={`h-1.5 rounded-full transition-all ${
-                i === step ? "bg-primary w-8" : "bg-border w-1.5 hover:bg-muted-foreground"
-              }`}
-            />
+              className="group flex h-11 items-center p-2.5"
+            >
+              <span
+                className={`h-1.5 rounded-full transition-all ${
+                  i === step ? "bg-primary w-8" : "bg-border group-hover:bg-muted-foreground w-1.5"
+                }`}
+              />
+            </button>
           ))}
         </div>
 

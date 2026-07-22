@@ -13,7 +13,9 @@ import { ResearchNotesWidget } from "@/components/pto/research-notes-widget";
 import { AppLogo, APP_TITLE_CLASS } from "@/components/app-logo";
 import { CoffeeLink } from "@/components/coffee-link";
 import { HighContrastToggle } from "@/components/high-contrast-toggle";
+import { MobileNav, MobileNavLink, MobileNavRow } from "@/components/ui/mobile-nav";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 function DemoShell() {
   const { reset, requests, persona, retroChudActive, registerLogoClick } = useDemo();
@@ -38,8 +40,26 @@ function DemoShell() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <HighContrastToggle />
+            <div className="hidden sm:block">
+              <HighContrastToggle />
+            </div>
             <PersonaSwitcher />
+            <div className="sm:hidden">
+              <MobileNav label="Menu">
+                <MobileNavRow>
+                  <HighContrastToggle />
+                </MobileNavRow>
+                <MobileNavLink href="/how-it-works">How it works</MobileNavLink>
+                <MobileNavRow>
+                  <Button variant="outline" onClick={reset} className="w-full">
+                    Reset demo data
+                  </Button>
+                </MobileNavRow>
+                <MobileNavLink href="/login" className="mt-2 border-t pt-3">
+                  Exit demo
+                </MobileNavLink>
+              </MobileNav>
+            </div>
           </div>
         </div>
       </header>
@@ -51,7 +71,7 @@ function DemoShell() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="hidden flex-wrap gap-2 sm:flex">
           <Button
             onClick={() => {
               setDialogOpen(true);
@@ -72,6 +92,23 @@ function DemoShell() {
           <Link href="/login" className="self-center text-sm underline">
             Exit demo
           </Link>
+        </div>
+        <div className="flex gap-2 sm:hidden">
+          <Button
+            className="flex-1"
+            onClick={() => {
+              setDialogOpen(true);
+              setNonce((n) => n + 1);
+            }}
+          >
+            Request time off
+          </Button>
+          <a
+            href="#activity"
+            className={cn(buttonVariants({ variant: "outline" }), "flex-1")}
+          >
+            View activity
+          </a>
         </div>
 
         {pendingForMe.length > 0 && (

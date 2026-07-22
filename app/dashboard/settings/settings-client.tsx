@@ -374,14 +374,26 @@ export function SettingsClient({
         <CardContent className="space-y-3">
           <div className="space-y-1.5">
             <Label>Subscribe URL</Label>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <Input readOnly value={feedUrl} className="font-mono text-xs" />
-              <Button variant="outline" size="sm" onClick={() => copy(feedUrl)}>
-                Copy
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => copy(webcalUrl)}>
-                Copy webcal://
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copy(feedUrl)}
+                  className="flex-1 sm:flex-none"
+                >
+                  Copy
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copy(webcalUrl)}
+                  className="flex-1 sm:flex-none"
+                >
+                  Copy webcal://
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>

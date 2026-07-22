@@ -23,26 +23,28 @@ export function ComparativeStats({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <table className="w-full border-collapse font-mono text-sm">
-          <thead>
-            <tr className="border-border border-b">
-              <th className="label-tag text-muted-foreground px-4 py-2 text-left font-normal">
-                Metric
-              </th>
-              <th className="label-tag px-4 py-2 text-right font-normal">{labelA}</th>
-              <th className="label-tag px-4 py-2 text-right font-normal">{labelB}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.label} className="border-border/60 border-b">
-                <td className="text-muted-foreground px-4 py-2">{r.label}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.a}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{r.b}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[420px] border-collapse font-mono text-sm">
+            <thead>
+              <tr className="border-border border-b">
+                <th className="label-tag text-muted-foreground px-3 py-2 text-left font-normal sm:px-4">
+                  Metric
+                </th>
+                <th className="label-tag px-3 py-2 text-right font-normal sm:px-4">{labelA}</th>
+                <th className="label-tag px-3 py-2 text-right font-normal sm:px-4">{labelB}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.label} className="border-border/60 border-b">
+                  <td className="text-muted-foreground px-3 py-2 sm:px-4">{r.label}</td>
+                  <td className="px-3 py-2 text-right tabular-nums sm:px-4">{r.a}</td>
+                  <td className="px-3 py-2 text-right tabular-nums sm:px-4">{r.b}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {footer && (
           <p className="text-muted-foreground border-border border-t px-4 py-2 text-xs">
             {footer}

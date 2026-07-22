@@ -29,8 +29,11 @@ export function RequestList() {
         {sorted.map((r) => {
           const canRespond = r.status === "pending" && r.creditedTo === persona;
           return (
-            <div key={r.id} className="flex items-center justify-between gap-3 px-4 py-3">
-              <div>
+            <div
+              key={r.id}
+              className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+            >
+              <div className="min-w-0">
                 <p className="text-sm font-medium">{r.title}</p>
                 <p className="text-muted-foreground font-mono text-xs">
                   {DEMO_PEOPLE[r.requestedBy].name} off duty {fmt(r.offDutyStart)} → back{" "}
