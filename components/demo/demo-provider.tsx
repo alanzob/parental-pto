@@ -11,7 +11,11 @@ import {
 } from "@/lib/demo/types";
 import { computeDuration } from "@/lib/demo/types";
 
-const STORAGE_KEY = "parental-pto-demo-v2";
+// Bump this whenever lib/demo/seed.ts changes shape or story — otherwise
+// anyone who already has v2 data cached in localStorage keeps seeing the
+// old seed forever, since load() only falls back to seedDemoRequests()
+// when the key is completely empty.
+const STORAGE_KEY = "parental-pto-demo-v3";
 const CLICKS_REQUIRED = 5;
 const CLICK_WINDOW_MS = 2500;
 

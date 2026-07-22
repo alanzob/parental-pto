@@ -45,7 +45,7 @@ function monthGrid(year: number, month: number): (Date | null)[] {
 }
 
 export function PtoCalendarHeatmap({
-  title = "12-Month No-Parenting Schedule",
+  title = "No-Parenting Schedule — 3 Months Back, 9 Forward",
   entries,
   labelA,
   labelB,
@@ -62,8 +62,12 @@ export function PtoCalendarHeatmap({
   const months = useMemo(() => {
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    // 3 months of recent history plus the current month plus 8 more ahead —
+    // a pure forward-looking window hid every past request (including the
+    // demo's whole disparity story) since nothing before "today" ever
+    // matched a cell.
     return Array.from({ length: 12 }, (_, i) => {
-      const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+      const d = new Date(start.getFullYear(), start.getMonth() + i - 3, 1);
       return { year: d.getFullYear(), month: d.getMonth() };
     });
   }, []);

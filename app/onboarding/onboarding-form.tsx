@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { QuickStartFlow } from "./quick-start-flow";
 import { toast } from "sonner";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -71,13 +72,16 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
         <CardHeader>
           <CardTitle>Set up your household</CardTitle>
           <CardDescription>
-            Create a new household or join your partner&apos;s with an invite
-            code.
+            Quick start sets up both of you at once. Or create solo and invite
+            later, or join your partner&apos;s household with a code.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue={initialCode ? "join" : "create"}>
+          <Tabs defaultValue={initialCode ? "join" : "quick-start"}>
             <TabsList className="w-full">
+              <TabsTrigger value="quick-start" className="flex-1">
+                Quick start
+              </TabsTrigger>
               <TabsTrigger value="create" className="flex-1">
                 Create
               </TabsTrigger>
@@ -85,6 +89,9 @@ export function OnboardingForm({ initialCode }: { initialCode?: string }) {
                 Join
               </TabsTrigger>
             </TabsList>
+            <TabsContent value="quick-start">
+              <QuickStartFlow />
+            </TabsContent>
             <TabsContent value="create">
               <form onSubmit={createHousehold} className="space-y-3 pt-2">
                 <div className="space-y-1.5">
