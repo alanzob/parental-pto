@@ -14,7 +14,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { computeDuration, formatDuration } from "@/lib/duration";
+import { occurrenceStarts, type Frequency } from "@/lib/pto/recurrence";
+import { cn } from "@/lib/utils";
 import type { Household } from "@/lib/types";
+
+const FREQUENCIES: { value: Frequency; label: string }[] = [
+  { value: "none", label: "Once" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+];
+
+function toDateInput(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
 
 function toLocalDatetimeInput(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -49,6 +63,8 @@ export function RequestPtoDialog({
     offDutyStart: string;
     backOnDuty: string;
     note: string;
+    frequency: Frequency;
+    endsBy: string | null;
   }) => Promise<boolean>;
   mode?: "create" | "edit";
   initial?: RequestDialogInitial;
@@ -71,10 +87,21 @@ export function RequestPtoDialog({
     return toLocalDatetimeInput(d);
   });
   const [note, setNote] = useState(initial?.note ?? "");
+  const [frequency, setFrequency] = useState<Frequency>("none");
+  const [endsBy, setEndsBy] = useState(() => {
+    const d = new Date(offDutyStart || new Date());
+    d.setMonth(d.getMonth() + 2);
+    return toDateInput(d);
+  });
   const [submitting, setSubmitting] = useState(false);
 
   const valid = title.trim().length > 0 && backOnDuty > offDutyStart;
   const preview = backOnDuty > offDutyStart ? computeDuration(offDutyStart, backOnDuty) : null;
+
+  const occurrenceCount = useMemo(() => {
+    if (frequency === "none" || !valid) return 1;
+    return occurrenceStarts(new Date(offDutyStart), new Date(endsBy), frequency).length;
+  }, [frequency, endsBy, offDutyStart, valid]);
 
   const isPeakPreview = useMemo(() => {
     const timePart = offDutyStart.split("T")[1];
@@ -94,6 +121,8 @@ export function RequestPtoDialog({
       offDutyStart: new Date(offDutyStart).toISOString(),
       backOnDuty: new Date(backOnDuty).toISOString(),
       note,
+      frequency: isEdit ? "none" : frequency,
+      endsBy: !isEdit && frequency !== "none" ? endsBy : null,
     });
     setSubmitting(false);
     if (ok) onOpenChange(false);
@@ -166,6 +195,47 @@ export function RequestPtoDialog({
             </p>
           )}
 
+          {!isEdit && (
+            <div className="space-y-1.5">
+              <Label>Repeat</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {FREQUENCIES.map((f) => (
+                  <button
+                    key={f.value}
+                    type="button"
+                    onClick={() => setFrequency(f.value)}
+                    aria-pressed={frequency === f.value}
+                    className={cn(
+                      "border-border rounded-sm border px-2.5 py-1 text-xs transition-colors",
+                      frequency === f.value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "hover:bg-muted",
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              {frequency !== "none" && (
+                <div className="grid grid-cols-[1fr_auto] items-end gap-3 pt-1.5">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ends-by">Ends by</Label>
+                    <Input
+                      id="ends-by"
+                      type="date"
+                      value={endsBy}
+                      onChange={(e) => setEndsBy(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-muted-foreground pb-2 text-xs">
+                    {occurrenceCount} request{occurrenceCount === 1 ? "" : "s"} generated
+                    {occurrenceCount >= 52 ? " (max)" : ""}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="note">Note (optional)</Label>
             <Textarea
@@ -181,7 +251,9 @@ export function RequestPtoDialog({
                 ? "Saving…"
                 : isEdit
                   ? "Save changes"
-                  : "Submit for approval"}
+                  : frequency !== "none"
+                    ? `Submit ${occurrenceCount} for approval`
+                    : "Submit for approval"}
             </Button>
           </DialogFooter>
         </form>

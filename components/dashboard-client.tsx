@@ -11,7 +11,9 @@ import { RequestPtoDialog } from "@/components/request-pto-dialog";
 import { PtoCalendarHeatmap, type HeatmapEntry } from "@/components/pto/calendar-heatmap";
 import { ComparativeStats, type StatRow } from "@/components/pto/comparative-stats";
 import { BalanceDisparityChart } from "@/components/pto/balance-disparity-chart";
+import { SeriesControls, type SeriesSummary } from "@/components/pto/series-controls";
 import { computeDisparitySeries, type DisparityEvent } from "@/lib/pto/disparity";
+import type { Frequency } from "@/lib/pto/recurrence";
 import { CalendarFeedCallout } from "@/components/calendar-feed-callout";
 import { ResearchNotesWidget } from "@/components/pto/research-notes-widget";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -116,6 +118,35 @@ export function DashboardClient({
     return computeDisparitySeries(events);
   }, [requests, partner]);
 
+  const seriesSummaries = useMemo<SeriesSummary[]>(() => {
+    const now = new Date().getTime();
+    const groups = new Map<string, PtoTransaction[]>();
+    for (const r of requests) {
+      if (!r.series_id) continue;
+      const arr = groups.get(r.series_id);
+      if (arr) arr.push(r);
+      else groups.set(r.series_id, [r]);
+    }
+    return Array.from(groups.entries()).map(([seriesId, items]) => {
+      const first = items[0];
+      const pending = items.filter((i) => i.status === "pending").length;
+      const futureRemaining = items.filter(
+        (i) =>
+          (i.status === "pending" || i.status === "approved") &&
+          new Date(i.occurred_at).getTime() > now,
+      ).length;
+      return {
+        seriesId,
+        title: first.title,
+        total: items.length,
+        pending,
+        futureRemaining,
+        canRespond: first.user_id === me.id && pending > 0,
+        canManage: first.initiated_by === me.id,
+      };
+    });
+  }, [requests, me.id]);
+
   const statsFooter = partner
     ? `Δ ${Math.abs(partnerBalance - myBalance).toFixed(1)}H ${
         partnerBalance - myBalance >= 0
@@ -129,7 +160,32 @@ export function DashboardClient({
     offDutyStart: string;
     backOnDuty: string;
     note: string;
+    frequency: Frequency;
+    endsBy: string | null;
   }) {
+    if (input.frequency !== "none" && input.endsBy) {
+      const { data, error } = await supabase.rpc("create_recurring_pto_request", {
+        p_title: input.title,
+        p_first_off_duty_start: input.offDutyStart,
+        p_first_back_on_duty: input.backOnDuty,
+        p_frequency: input.frequency,
+        p_ends_by: new Date(`${input.endsBy}T23:59:59`).toISOString(),
+        p_note: input.note || null,
+      });
+      if (error) {
+        toast.error(friendlyRpcError(error.message));
+        return false;
+      }
+      const n = typeof data === "number" ? data : 0;
+      toast.success(
+        household.partner_mode === "manual"
+          ? `${n} requests logged and banked.`
+          : `${n} requests sent to ${partner?.display_name ?? "your partner"} for approval.`,
+      );
+      router.refresh();
+      return true;
+    }
+
     const { error } = await supabase.rpc("create_pto_request", {
       p_title: input.title,
       p_off_duty_start: input.offDutyStart,
@@ -169,6 +225,8 @@ export function DashboardClient({
     offDutyStart: string;
     backOnDuty: string;
     note: string;
+    frequency: Frequency;
+    endsBy: string | null;
   }) {
     if (!editing) return false;
     const wasApproved = editing.status === "approved";
@@ -204,6 +262,42 @@ export function DashboardClient({
         ? `Cancelled — ${request.final_cost.toFixed(1)}h credit removed.`
         : "Request cancelled.",
     );
+    router.refresh();
+  }
+
+  async function respondSeries(seriesId: string, approve: boolean) {
+    const { error } = await supabase.rpc("respond_pto_series", {
+      p_series_id: seriesId,
+      p_approve: approve,
+    });
+    if (error) {
+      toast.error(friendlyRpcError(error.message));
+      return;
+    }
+    toast.success(approve ? "Whole series approved." : "Whole series denied.");
+    router.refresh();
+  }
+
+  async function cancelSeries(seriesId: string) {
+    const { error } = await supabase.rpc("cancel_pto_series", { p_series_id: seriesId });
+    if (error) {
+      toast.error(friendlyRpcError(error.message));
+      return;
+    }
+    toast.success("Remaining requests in the series cancelled.");
+    router.refresh();
+  }
+
+  async function shiftSeries(seriesId: string, days: number) {
+    const { error } = await supabase.rpc("reschedule_pto_series", {
+      p_series_id: seriesId,
+      p_shift_days: days,
+    });
+    if (error) {
+      toast.error(friendlyRpcError(error.message));
+      return;
+    }
+    toast.success(`Remaining requests moved ${days > 0 ? "+" : ""}${days} days.`);
     router.refresh();
   }
 
@@ -290,6 +384,13 @@ export function DashboardClient({
           labelB={partner.display_name ?? "Partner"}
         />
       )}
+
+      <SeriesControls
+        series={seriesSummaries}
+        onRespond={respondSeries}
+        onCancel={cancelSeries}
+        onShift={shiftSeries}
+      />
 
       <div id="activity" className="scroll-mt-4">
         <h2 className="label-tag mb-2">Recent activity</h2>

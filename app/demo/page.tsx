@@ -9,6 +9,7 @@ import { RequestList } from "@/components/demo/request-list";
 import { NewRequestDialog } from "@/components/demo/new-request-dialog";
 import { StatsPanel } from "@/components/demo/stats-panel";
 import { DisparityChart } from "@/components/demo/disparity-chart";
+import { DemoSeriesControls } from "@/components/demo/series-controls";
 import { CalendarHeatmap } from "@/components/demo/calendar-heatmap";
 import { ResearchNotesWidget } from "@/components/pto/research-notes-widget";
 import { AppLogo, APP_TITLE_CLASS } from "@/components/app-logo";
@@ -126,6 +127,8 @@ function DemoShell() {
         <StatsPanel />
 
         <DisparityChart />
+
+        <DemoSeriesControls />
 
         <div id="activity" className="scroll-mt-4">
           <h2 className="label-tag mb-2">Requests</h2>

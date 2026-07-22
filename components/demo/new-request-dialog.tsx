@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,13 +20,27 @@ import {
   otherPerson,
   type DemoRequest,
 } from "@/lib/demo/types";
+import { occurrenceStarts, type Frequency } from "@/lib/pto/recurrence";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+const FREQUENCIES: { value: Frequency; label: string }[] = [
+  { value: "none", label: "Once" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+];
 
 function toLocalDatetimeInput(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
     date.getHours(),
   )}:${pad(date.getMinutes())}`;
+}
+
+function toDateInput(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 export function NewRequestDialog({
@@ -38,7 +52,7 @@ export function NewRequestDialog({
   onOpenChange: (open: boolean) => void;
   editing?: DemoRequest | null;
 }) {
-  const { persona, submitRequest, editRequest } = useDemo();
+  const { persona, submitRequest, submitRecurringRequest, editRequest } = useDemo();
   const isEdit = !!editing;
 
   const [title, setTitle] = useState(editing?.title ?? "");
@@ -51,10 +65,21 @@ export function NewRequestDialog({
     d.setDate(d.getDate() + 1);
     return toLocalDatetimeInput(d);
   });
+  const [frequency, setFrequency] = useState<Frequency>("none");
+  const [endsBy, setEndsBy] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 2);
+    return toDateInput(d);
+  });
 
   const preview = computeDuration(offDutyStart, backOnDuty);
   const valid = title.trim().length > 0 && backOnDuty > offDutyStart;
   const wasApproved = editing?.status === "approved";
+
+  const occurrenceCount = useMemo(() => {
+    if (frequency === "none" || !valid) return 1;
+    return occurrenceStarts(new Date(offDutyStart), new Date(endsBy), frequency).length;
+  }, [frequency, endsBy, offDutyStart, valid]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,6 +91,12 @@ export function NewRequestDialog({
           ? `Updated — sent back to ${DEMO_PEOPLE[otherPerson(persona)].name} for re-approval.`
           : "Request updated.",
       );
+    } else if (frequency !== "none") {
+      submitRecurringRequest({ title: title.trim(), offDutyStart, backOnDuty }, frequency, endsBy);
+      toast.success(
+        `${occurrenceCount} requests sent to ${DEMO_PEOPLE[otherPerson(persona)].name} for approval.`,
+      );
+      setTitle("");
     } else {
       submitRequest({ title: title.trim(), offDutyStart, backOnDuty });
       toast.success(`Sent to ${DEMO_PEOPLE[otherPerson(persona)].name} for approval.`);
@@ -136,9 +167,55 @@ export function NewRequestDialog({
               {DEMO_PEOPLE[otherPerson(persona)].name} for re-approval.
             </p>
           )}
+
+          {!isEdit && (
+            <div className="space-y-1.5">
+              <Label>Repeat</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {FREQUENCIES.map((f) => (
+                  <button
+                    key={f.value}
+                    type="button"
+                    onClick={() => setFrequency(f.value)}
+                    aria-pressed={frequency === f.value}
+                    className={cn(
+                      "border-border rounded-sm border px-2.5 py-1 text-xs transition-colors",
+                      frequency === f.value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "hover:bg-muted",
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              {frequency !== "none" && (
+                <div className="grid grid-cols-[1fr_auto] items-end gap-3 pt-1.5">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="demo-ends-by">Ends by</Label>
+                    <Input
+                      id="demo-ends-by"
+                      type="date"
+                      value={endsBy}
+                      onChange={(e) => setEndsBy(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-muted-foreground pb-2 text-xs">
+                    {occurrenceCount} request{occurrenceCount === 1 ? "" : "s"} generated
+                    {occurrenceCount >= 52 ? " (max)" : ""}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           <DialogFooter>
             <Button type="submit" disabled={!valid}>
-              {isEdit ? "Save changes" : "Submit for approval"}
+              {isEdit
+                ? "Save changes"
+                : frequency !== "none"
+                  ? `Submit ${occurrenceCount} for approval`
+                  : "Submit for approval"}
             </Button>
           </DialogFooter>
         </form>

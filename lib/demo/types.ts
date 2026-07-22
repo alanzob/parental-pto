@@ -23,5 +23,7 @@ export type DemoRequest = {
   fullDays: number;
   hours: number;
   status: "pending" | "approved" | "denied" | "cancelled";
+  /** Set for instances generated from one recurring series; undefined for one-offs. */
+  seriesId?: string;
   createdAt: string; // ISO datetime
 };

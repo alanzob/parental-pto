@@ -10,6 +10,7 @@ import {
   type DemoRequest,
 } from "@/lib/demo/types";
 import { computeDuration } from "@/lib/demo/types";
+import { occurrenceStarts, type Frequency } from "@/lib/pto/recurrence";
 
 // Bump this whenever lib/demo/seed.ts changes shape or story — otherwise
 // anyone who already has v2 data cached in localStorage keeps seeing the
@@ -27,11 +28,19 @@ type DemoContextValue = {
   requests: DemoRequest[];
   balanceFor: (p: DemoPerson) => Balance;
   submitRequest: (input: { title: string; offDutyStart: string; backOnDuty: string }) => void;
+  submitRecurringRequest: (
+    input: { title: string; offDutyStart: string; backOnDuty: string },
+    frequency: Frequency,
+    endsBy: string,
+  ) => void;
   editRequest: (
     id: string,
     input: { title: string; offDutyStart: string; backOnDuty: string },
   ) => void;
   cancelRequest: (id: string) => void;
+  respondSeries: (seriesId: string, approve: boolean) => void;
+  cancelSeries: (seriesId: string) => void;
+  rescheduleSeries: (seriesId: string, days: number) => void;
   approve: (id: string) => void;
   deny: (id: string) => void;
   reset: () => void;
@@ -121,6 +130,84 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     [persona],
   );
 
+  const submitRecurringRequest = useCallback(
+    (
+      input: { title: string; offDutyStart: string; backOnDuty: string },
+      frequency: Frequency,
+      endsBy: string,
+    ) => {
+      const seriesId = crypto.randomUUID();
+      const creditedTo = otherPerson(persona);
+      const durationMs =
+        new Date(input.backOnDuty).getTime() - new Date(input.offDutyStart).getTime();
+      const starts = occurrenceStarts(new Date(input.offDutyStart), new Date(endsBy), frequency);
+      const createdAt = new Date().toISOString();
+      const instances: DemoRequest[] = starts.map((off) => {
+        const back = new Date(off.getTime() + durationMs);
+        const { fullDays, hours } = computeDuration(off, back);
+        return {
+          id: crypto.randomUUID(),
+          title: input.title,
+          requestedBy: persona,
+          creditedTo,
+          offDutyStart: off.toISOString(),
+          backOnDuty: back.toISOString(),
+          fullDays,
+          hours,
+          status: "pending",
+          seriesId,
+          createdAt,
+        };
+      });
+      setRequests((prev) => [...instances, ...prev]);
+    },
+    [persona],
+  );
+
+  const respondSeries = useCallback((seriesId: string, approve: boolean) => {
+    setRequests((prev) =>
+      prev.map((r) =>
+        r.seriesId === seriesId && r.status === "pending"
+          ? { ...r, status: approve ? ("approved" as const) : ("denied" as const) }
+          : r,
+      ),
+    );
+  }, []);
+
+  const cancelSeries = useCallback((seriesId: string) => {
+    const now = Date.now();
+    setRequests((prev) =>
+      prev.map((r) =>
+        r.seriesId === seriesId &&
+        (r.status === "pending" || r.status === "approved") &&
+        new Date(r.offDutyStart).getTime() > now
+          ? { ...r, status: "cancelled" as const }
+          : r,
+      ),
+    );
+  }, []);
+
+  const rescheduleSeries = useCallback((seriesId: string, days: number) => {
+    const now = Date.now();
+    const shift = days * 24 * 60 * 60 * 1000;
+    setRequests((prev) =>
+      prev.map((r) => {
+        if (
+          r.seriesId === seriesId &&
+          (r.status === "pending" || r.status === "approved") &&
+          new Date(r.offDutyStart).getTime() > now
+        ) {
+          return {
+            ...r,
+            offDutyStart: new Date(new Date(r.offDutyStart).getTime() + shift).toISOString(),
+            backOnDuty: new Date(new Date(r.backOnDuty).getTime() + shift).toISOString(),
+          };
+        }
+        return r;
+      }),
+    );
+  }, []);
+
   const editRequest = useCallback(
     (id: string, input: { title: string; offDutyStart: string; backOnDuty: string }) => {
       const { fullDays, hours } = computeDuration(input.offDutyStart, input.backOnDuty);
@@ -193,8 +280,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       requests,
       balanceFor,
       submitRequest,
+      submitRecurringRequest,
       editRequest,
       cancelRequest,
+      respondSeries,
+      cancelSeries,
+      rescheduleSeries,
       approve,
       deny,
       reset,
@@ -206,8 +297,12 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       requests,
       balanceFor,
       submitRequest,
+      submitRecurringRequest,
       editRequest,
       cancelRequest,
+      respondSeries,
+      cancelSeries,
+      rescheduleSeries,
       approve,
       deny,
       reset,
