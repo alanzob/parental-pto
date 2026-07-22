@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+  --font-heading: var(--font-newsreader);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -143,8 +143,16 @@
       linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
     background-size: 24px 24px;
   }
+  /* Body/forms read in the humanist sans; display headings default to the
+   * serif. Elements that want the drafting voice (.label-tag eyebrows, the
+   * mono logo wordmark, figures) set font-mono explicitly and win over this. */
   html {
-    @apply font-mono;
+    @apply font-sans;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
   }
 }
 
