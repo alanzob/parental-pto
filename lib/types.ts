@@ -63,8 +63,10 @@ export type PtoTransaction = {
   base_hours: number;
   multiplier: number;
   final_cost: number;
-  status: "pending" | "approved" | "denied";
+  status: "pending" | "approved" | "denied" | "cancelled";
   note: string | null;
+  /** Groups instances generated from one recurring series; null for one-offs. */
+  series_id: string | null;
   occurred_at: string;
   created_at: string;
 };

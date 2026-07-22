@@ -38,6 +38,7 @@ export function DashboardClient({
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [requestNonce, setRequestNonce] = useState(0);
+  const [editing, setEditing] = useState<PtoTransaction | null>(null);
 
   const myBalance = balances.find((b) => b.user_id === me.id)?.current_balance ?? 0;
   const partnerBalance = partner
@@ -163,6 +164,49 @@ export function DashboardClient({
     router.refresh();
   }
 
+  async function submitEdit(input: {
+    title: string;
+    offDutyStart: string;
+    backOnDuty: string;
+    note: string;
+  }) {
+    if (!editing) return false;
+    const wasApproved = editing.status === "approved";
+    const { error } = await supabase.rpc("edit_pto_request", {
+      p_transaction_id: editing.id,
+      p_off_duty_start: input.offDutyStart,
+      p_back_on_duty: input.backOnDuty,
+      p_note: input.note || null,
+    });
+    if (error) {
+      toast.error(friendlyRpcError(error.message));
+      return false;
+    }
+    toast.success(
+      wasApproved && household.partner_mode !== "manual"
+        ? `Updated — sent back to ${partner?.display_name ?? "your partner"} for re-approval.`
+        : "Request updated.",
+    );
+    router.refresh();
+    return true;
+  }
+
+  async function cancelRequest(request: PtoTransaction) {
+    const { error } = await supabase.rpc("cancel_pto_request", {
+      p_transaction_id: request.id,
+    });
+    if (error) {
+      toast.error(friendlyRpcError(error.message));
+      return;
+    }
+    toast.success(
+      request.status === "approved"
+        ? `Cancelled — ${request.final_cost.toFixed(1)}h credit removed.`
+        : "Request cancelled.",
+    );
+    router.refresh();
+  }
+
   return (
     <div className="space-y-6">
       {!partner && (
@@ -255,7 +299,14 @@ export function DashboardClient({
             awaiting your partner&apos;s approval.
           </p>
         )}
-        <RequestsList requests={requests} me={me} partner={partner} onRespond={respondToRequest} />
+        <RequestsList
+          requests={requests}
+          me={me}
+          partner={partner}
+          onRespond={respondToRequest}
+          onEdit={setEditing}
+          onCancel={cancelRequest}
+        />
       </div>
 
       {partner && (
@@ -278,6 +329,29 @@ export function DashboardClient({
           onSubmit={submitRequest}
         />
       )}
+
+      {editing && (
+        <RequestPtoDialog
+          key={`edit-${editing.id}`}
+          mode="edit"
+          wasApproved={editing.status === "approved"}
+          initial={{
+            title: editing.title,
+            offDutyStart: editing.occurred_at,
+            backOnDuty: new Date(
+              new Date(editing.occurred_at).getTime() + editing.base_hours * 60 * 60 * 1000,
+            ).toISOString(),
+            note: editing.note ?? "",
+          }}
+          household={household}
+          partnerName={partner?.display_name ?? "your partner"}
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setEditing(null);
+          }}
+          onSubmit={submitEdit}
+        />
+      )}
     </div>
   );
 }
@@ -288,6 +362,11 @@ const RPC_ERROR_MESSAGES: Record<string, string> = {
   NO_PARTNER: "Invite your partner before requesting time off.",
   INVALID_TITLE: "Give this request a name.",
   INVALID_WINDOW: "Back on duty must be after off duty starting.",
+  NOT_YOURS: "Only the person who made a request can change it.",
+  RESOLVED: "Only pending or approved requests can be edited.",
+  ALREADY_CANCELLED: "That request is already cancelled.",
+  NOT_FOUND: "That request no longer exists.",
+  FORBIDDEN: "That request isn't in your household.",
 };
 
 function friendlyRpcError(message: string): string {

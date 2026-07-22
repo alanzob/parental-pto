@@ -23,12 +23,22 @@ function toLocalDatetimeInput(date: Date): string {
   )}:${pad(date.getMinutes())}`;
 }
 
+export type RequestDialogInitial = {
+  title: string;
+  offDutyStart: string; // ISO
+  backOnDuty: string; // ISO
+  note: string;
+};
+
 export function RequestPtoDialog({
   household,
   partnerName,
   open,
   onOpenChange,
   onSubmit,
+  mode = "create",
+  initial,
+  wasApproved = false,
 }: {
   household: Household;
   partnerName: string;
@@ -40,17 +50,27 @@ export function RequestPtoDialog({
     backOnDuty: string;
     note: string;
   }) => Promise<boolean>;
+  mode?: "create" | "edit";
+  initial?: RequestDialogInitial;
+  /** In edit mode: whether the request being edited is currently approved,
+   * so we can warn that saving will send it back for re-approval. */
+  wasApproved?: boolean;
 }) {
+  const isEdit = mode === "edit";
+
   // Remounted via `key` each time it opens (see dashboard-client.tsx), so
   // these initial values are fresh per open without needing an effect.
-  const [title, setTitle] = useState("");
-  const [offDutyStart, setOffDutyStart] = useState(() => toLocalDatetimeInput(new Date()));
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [offDutyStart, setOffDutyStart] = useState(() =>
+    toLocalDatetimeInput(initial ? new Date(initial.offDutyStart) : new Date()),
+  );
   const [backOnDuty, setBackOnDuty] = useState(() => {
+    if (initial) return toLocalDatetimeInput(new Date(initial.backOnDuty));
     const d = new Date();
     d.setHours(d.getHours() + 4);
     return toLocalDatetimeInput(d);
   });
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(initial?.note ?? "");
   const [submitting, setSubmitting] = useState(false);
 
   const valid = title.trim().length > 0 && backOnDuty > offDutyStart;
@@ -83,10 +103,11 @@ export function RequestPtoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Request time off</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit request" : "Request time off"}</DialogTitle>
           <DialogDescription>
-            Like a car rental: when do you go off duty, and when are you back?
-            {partnerName} banks the equivalent credit once they approve.
+            {isEdit
+              ? "Adjust the timing or note for this request."
+              : `Like a car rental: when do you go off duty, and when are you back? ${partnerName} banks the equivalent credit once they approve.`}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -129,12 +150,19 @@ export function RequestPtoDialog({
               {formatDuration(preview.fullDays, preview.hours)}
               {isPeakPreview &&
                 ` — ${household.peak_multiplier}x peak rate applies (starts in the household's peak window)`}{" "}
-              — banked to {partnerName} once approved.
+              — banked to {partnerName} {isEdit ? "when re-approved" : "once approved"}.
             </p>
           )}
           {backOnDuty <= offDutyStart && (
             <p className="text-destructive text-sm">
               &quot;Back on duty&quot; must be after &quot;Off duty starting&quot;.
+            </p>
+          )}
+
+          {isEdit && wasApproved && (
+            <p className="border-warning bg-warning/10 text-warning rounded-md border p-2 text-sm">
+              This request is already approved. Saving changes sends it back to {partnerName} for
+              re-approval, and the banked credit updates only once they approve again.
             </p>
           )}
 
@@ -149,7 +177,11 @@ export function RequestPtoDialog({
           </div>
           <DialogFooter>
             <Button type="submit" disabled={submitting || !valid}>
-              {submitting ? "Sending…" : "Submit for approval"}
+              {submitting
+                ? "Saving…"
+                : isEdit
+                  ? "Save changes"
+                  : "Submit for approval"}
             </Button>
           </DialogFooter>
         </form>

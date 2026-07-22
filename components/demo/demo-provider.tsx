@@ -27,6 +27,11 @@ type DemoContextValue = {
   requests: DemoRequest[];
   balanceFor: (p: DemoPerson) => Balance;
   submitRequest: (input: { title: string; offDutyStart: string; backOnDuty: string }) => void;
+  editRequest: (
+    id: string,
+    input: { title: string; offDutyStart: string; backOnDuty: string },
+  ) => void;
+  cancelRequest: (id: string) => void;
   approve: (id: string) => void;
   deny: (id: string) => void;
   reset: () => void;
@@ -116,6 +121,36 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     [persona],
   );
 
+  const editRequest = useCallback(
+    (id: string, input: { title: string; offDutyStart: string; backOnDuty: string }) => {
+      const { fullDays, hours } = computeDuration(input.offDutyStart, input.backOnDuty);
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                title: input.title,
+                offDutyStart: input.offDutyStart,
+                backOnDuty: input.backOnDuty,
+                fullDays,
+                hours,
+                // Re-approve on edit: an approved request drops back to
+                // pending so the partner signs off on the new timing.
+                status: r.status === "approved" ? ("pending" as const) : r.status,
+              }
+            : r,
+        ),
+      );
+    },
+    [],
+  );
+
+  const cancelRequest = useCallback((id: string) => {
+    setRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: "cancelled" as const } : r)),
+    );
+  }, []);
+
   const approve = useCallback((id: string) => {
     setRequests((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: "approved" as const } : r)),
@@ -158,13 +193,27 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       requests,
       balanceFor,
       submitRequest,
+      editRequest,
+      cancelRequest,
       approve,
       deny,
       reset,
       retroChudActive,
       registerLogoClick,
     }),
-    [persona, requests, balanceFor, submitRequest, approve, deny, reset, retroChudActive, registerLogoClick],
+    [
+      persona,
+      requests,
+      balanceFor,
+      submitRequest,
+      editRequest,
+      cancelRequest,
+      approve,
+      deny,
+      reset,
+      retroChudActive,
+      registerLogoClick,
+    ],
   );
 
   return <DemoContext.Provider value={value}>{children}</DemoContext.Provider>;

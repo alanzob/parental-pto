@@ -20,11 +20,15 @@ export function RequestsList({
   me,
   partner,
   onRespond,
+  onEdit,
+  onCancel,
 }: {
   requests: PtoTransaction[];
   me: PersonRef;
   partner: PersonRef | null;
   onRespond: (id: string, approve: boolean) => void;
+  onEdit: (request: PtoTransaction) => void;
+  onCancel: (request: PtoTransaction) => void;
 }) {
   if (requests.length === 0) {
     return (
@@ -50,13 +54,22 @@ export function RequestsList({
           const end = new Date(start.getTime() + r.base_hours * 60 * 60 * 1000);
           const duration = formatDuration(Math.floor(r.base_hours / 24), r.base_hours % 24);
           const canRespond = r.status === "pending" && r.user_id === me.id;
+          const canManage =
+            (r.status === "pending" || r.status === "approved") && r.initiated_by === me.id;
           return (
             <div
               key={r.id}
               className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
             >
               <div className="min-w-0">
-                <p className="text-sm font-medium">{r.title}</p>
+                <p className="text-sm font-medium">
+                  {r.title}
+                  {r.status === "cancelled" && (
+                    <span className="text-muted-foreground ml-1.5 font-normal line-through">
+                      cancelled
+                    </span>
+                  )}
+                </p>
                 <p className="text-muted-foreground font-mono text-xs">
                   {nameFor(r.initiated_by)} off duty {fmt(start)} → back {fmt(end)} ·{" "}
                   {duration}
@@ -65,14 +78,16 @@ export function RequestsList({
                   {r.note && ` · ${r.note}`}
                 </p>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex shrink-0 flex-wrap items-center gap-2">
                 <Badge
                   variant={
                     r.status === "approved"
                       ? "success"
                       : r.status === "denied"
                         ? "destructive"
-                        : "secondary"
+                        : r.status === "cancelled"
+                          ? "outline"
+                          : "secondary"
                   }
                 >
                   {r.status}
@@ -84,6 +99,16 @@ export function RequestsList({
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => onRespond(r.id, false)}>
                       Deny
+                    </Button>
+                  </>
+                )}
+                {canManage && (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => onEdit(r)}>
+                      Edit
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => onCancel(r)}>
+                      Cancel
                     </Button>
                   </>
                 )}

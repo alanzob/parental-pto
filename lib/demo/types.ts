@@ -22,6 +22,6 @@ export type DemoRequest = {
   backOnDuty: string; // ISO datetime — when they resume parenting
   fullDays: number;
   hours: number;
-  status: "pending" | "approved" | "denied";
+  status: "pending" | "approved" | "denied" | "cancelled";
   createdAt: string; // ISO datetime
 };
