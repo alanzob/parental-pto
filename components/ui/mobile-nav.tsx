@@ -69,6 +69,7 @@ export function MobileNavLink({
 }) {
   return (
     <DialogPrimitive.Close
+      nativeButton={false}
       render={<Link href={href} />}
       className={cn(
         "hover:bg-muted flex min-h-11 items-center rounded-lg px-3 text-base font-medium",
