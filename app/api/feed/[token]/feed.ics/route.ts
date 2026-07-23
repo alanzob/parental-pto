@@ -22,7 +22,7 @@ export async function GET(
 
   const { data: household } = await supabase
     .from("households")
-    .select("id, name")
+    .select("id, name, manual_partner_name")
     .eq("calendar_feed_token", token)
     .single();
 
@@ -52,6 +52,7 @@ export async function GET(
     household.name,
     transactions ?? [],
     displayNameByUserId,
+    household.manual_partner_name,
   );
 
   if (error || !value) {

@@ -16,13 +16,18 @@ export function buildIcsFeed(
   householdName: string,
   transactions: PtoTransaction[],
   displayNameByUserId: Map<string, string>,
+  manualPartnerName?: string | null,
 ): { value: string | null; error: Error | null } {
   const events: EventAttributes[] = transactions.map((t) => {
     const start = new Date(t.occurred_at);
     const end = new Date(start.getTime() + t.base_hours * 60 * 60 * 1000);
     // initiated_by is whoever is actually off duty during this window —
-    // user_id is the partner being credited, not who the calendar block is for.
-    const who = displayNameByUserId.get(t.initiated_by) ?? "Someone";
+    // user_id is the partner being credited, not who the calendar block is
+    // for. Null means the manual (unsigned-up) partner was off duty.
+    const who =
+      t.initiated_by === null
+        ? (manualPartnerName ?? "Someone")
+        : (displayNameByUserId.get(t.initiated_by) ?? "Someone");
 
     return {
       uid: `${t.id}@parental-pto`,

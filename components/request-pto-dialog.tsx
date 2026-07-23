@@ -74,6 +74,7 @@ export function RequestPtoDialog({
     note: string;
     frequency: Frequency;
     endsBy: string | null;
+    forPartner: boolean;
   }) => Promise<boolean>;
   mode?: "create" | "edit";
   initial?: RequestDialogInitial;
@@ -86,6 +87,7 @@ export function RequestPtoDialog({
   const [date, setDate] = useState(initial?.date ?? toDateInput(new Date()));
   const [category, setCategory] = useState<OffCategory>(initial?.category ?? "evening");
   const [note, setNote] = useState(initial?.note ?? "");
+  const [forPartner, setForPartner] = useState(false);
   const [frequency, setFrequency] = useState<Frequency>("none");
   const [endsBy, setEndsBy] = useState(() => {
     const d = new Date(initial?.date ?? new Date());
@@ -116,6 +118,7 @@ export function RequestPtoDialog({
       note,
       frequency: isEdit ? "none" : frequency,
       endsBy: !isEdit && frequency !== "none" ? endsBy : null,
+      forPartner: !isEdit && isManual && forPartner,
     });
     setSubmitting(false);
     if (ok) onOpenChange(false);
@@ -129,10 +132,52 @@ export function RequestPtoDialog({
           <DialogDescription>
             {isEdit
               ? "Adjust the date or category for this request."
-              : `Pick a date and what kind of time off it is. ${partnerName} banks the points once they approve.`}
+              : isManual && forPartner
+                ? `Pick a date and what kind of time off ${partnerName} took. You bank the points immediately.`
+                : `Pick a date and what kind of time off it is. ${partnerName} banks the points once they approve.`}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!isEdit && isManual && (
+            <div className="space-y-1.5">
+              <Label>Who&apos;s this for?</Label>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setForPartner(false)}
+                  aria-pressed={!forPartner}
+                  className={cn(
+                    "border-border flex-1 rounded-sm border px-3 py-1.5 text-sm transition-colors",
+                    !forPartner
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "hover:bg-muted",
+                  )}
+                >
+                  You
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForPartner(true)}
+                  aria-pressed={forPartner}
+                  className={cn(
+                    "border-border flex-1 rounded-sm border px-3 py-1.5 text-sm transition-colors",
+                    forPartner
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "hover:bg-muted",
+                  )}
+                >
+                  {partnerName}
+                </button>
+              </div>
+              {forPartner && (
+                <p className="text-muted-foreground text-xs">
+                  Since {partnerName} isn&apos;t on MyTO yet, logging their time off banks the
+                  points to you right away — no approval needed.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <Label htmlFor="title">Name this request</Label>
             <Input
@@ -175,8 +220,14 @@ export function RequestPtoDialog({
           </div>
 
           <p className="bg-muted rounded-md p-2 text-sm">
-            {formatPoints(weight)} banked to {partnerName}{" "}
-            {isEdit ? (isManual ? "— updated immediately" : "when re-approved") : "once approved"}.
+            {!isEdit && isManual && forPartner ? (
+              <>{formatPoints(weight)} banked to you — updated immediately.</>
+            ) : (
+              <>
+                {formatPoints(weight)} banked to {partnerName}{" "}
+                {isEdit ? (isManual ? "— updated immediately" : "when re-approved") : "once approved"}.
+              </>
+            )}
           </p>
 
           {isEdit && wasApproved && !isManual && (
@@ -244,9 +295,13 @@ export function RequestPtoDialog({
                 ? "Saving…"
                 : isEdit
                   ? "Save changes"
-                  : frequency !== "none"
-                    ? `Submit ${occurrenceCount} for approval`
-                    : "Submit for approval"}
+                  : isManual && forPartner
+                    ? frequency !== "none"
+                      ? `Log ${occurrenceCount} entries`
+                      : "Log entry"
+                    : frequency !== "none"
+                      ? `Submit ${occurrenceCount} for approval`
+                      : "Submit for approval"}
             </Button>
           </DialogFooter>
         </form>

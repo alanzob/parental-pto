@@ -139,10 +139,10 @@ export function DashboardClient({
         pending,
         futureRemaining,
         canRespond: first.user_id === me.id && pending > 0,
-        canManage: first.initiated_by === me.id,
+        canManage: first.initiated_by === me.id || (first.initiated_by === null && partner?.id === null),
       };
     });
-  }, [requests, me.id]);
+  }, [requests, me.id, partner]);
 
   const statsFooter = partner
     ? `Δ ${formatPoints(Math.abs(partnerBalance - myBalance))} ${
@@ -160,6 +160,7 @@ export function DashboardClient({
     note: string;
     frequency: Frequency;
     endsBy: string | null;
+    forPartner: boolean;
   }) {
     if (input.frequency !== "none" && input.endsBy) {
       const { data, error } = await supabase.rpc("create_recurring_pto_request", {
@@ -170,6 +171,7 @@ export function DashboardClient({
         p_frequency: input.frequency,
         p_ends_by: new Date(`${input.endsBy}T23:59:59`).toISOString(),
         p_note: input.note || null,
+        p_for_partner: input.forPartner,
       });
       if (error) {
         toast.error(friendlyRpcError(error.message));
@@ -177,9 +179,11 @@ export function DashboardClient({
       }
       const n = typeof data === "number" ? data : 0;
       toast.success(
-        household.partner_mode === "manual"
-          ? `${n} requests logged and banked.`
-          : `${n} requests sent to ${partner?.display_name ?? "your partner"} for approval.`,
+        input.forPartner
+          ? `${n} entries logged and banked to you.`
+          : household.partner_mode === "manual"
+            ? `${n} requests logged and banked.`
+            : `${n} requests sent to ${partner?.display_name ?? "your partner"} for approval.`,
       );
       router.refresh();
       return true;
@@ -191,17 +195,20 @@ export function DashboardClient({
       p_back_on_duty: input.backOnDuty,
       p_category: input.category,
       p_note: input.note || null,
+      p_for_partner: input.forPartner,
     });
     if (error) {
       toast.error(friendlyRpcError(error.message));
       return false;
     }
     toast.success(
-      household.partner_mode === "manual"
-        ? "Logged and banked — approved automatically, since it's just you tracking this."
-        : partner
-          ? `Sent to ${partner.display_name ?? "your partner"} for approval.`
-          : "Request submitted.",
+      input.forPartner
+        ? "Logged and banked to you — no approval needed."
+        : household.partner_mode === "manual"
+          ? "Logged and banked — approved automatically, since it's just you tracking this."
+          : partner
+            ? `Sent to ${partner.display_name ?? "your partner"} for approval.`
+            : "Request submitted.",
     );
     router.refresh();
     return true;
@@ -228,6 +235,7 @@ export function DashboardClient({
     note: string;
     frequency: Frequency;
     endsBy: string | null;
+    forPartner: boolean;
   }) {
     if (!editing) return false;
     const wasApproved = editing.status === "approved";

@@ -47,8 +47,14 @@ export function RequestsList({
         {requests.map((r) => {
           const cat = r.category ? categoryLabel(r.category as OffCategory) : "Time off";
           const canRespond = r.status === "pending" && r.user_id === me.id;
+          // In a manual household there's only one real member, so they
+          // manage every request — including ones logged on the manual
+          // partner's behalf, which have initiated_by = null. `partner.id
+          // === null` is exactly the manual-household signal (an invited
+          // partner always has a real uuid).
           const canManage =
-            (r.status === "pending" || r.status === "approved") && r.initiated_by === me.id;
+            (r.status === "pending" || r.status === "approved") &&
+            (r.initiated_by === me.id || (r.initiated_by === null && partner?.id === null));
           return (
             <div
               key={r.id}

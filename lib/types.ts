@@ -61,7 +61,9 @@ export type PtoTransaction = {
   id: string;
   household_id: string;
   user_id: string | null;
-  initiated_by: string;
+  /** Null when logged on behalf of a manual (unsigned-up) partner, or when
+   * the original requester's account has since been deleted. */
+  initiated_by: string | null;
   transaction_type: "request";
   title: string;
   /** null on legacy pre-0008 rows; every new request has one. */
