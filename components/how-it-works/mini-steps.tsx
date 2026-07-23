@@ -7,12 +7,12 @@ const STEPS = [
   {
     n: "02",
     title: "Your partner gets theirs",
-    body: "Credit is given to whoever covered, automatically.",
+    body: "Credit is given to whoever covered, literally.",
   },
   {
     n: "03",
     title: "See the whole picture",
-    body: "One shared ledger — balances and history, always visible.",
+    body: "One shared ledger, synced straight to your own Google or Apple calendar.",
   },
 ];
 

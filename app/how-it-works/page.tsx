@@ -56,7 +56,7 @@ const STEPS: Step[] = [
   {
     kicker: "How it works · 3",
     title: "See the whole picture, always",
-    body: "A shared calendar of who's been off and when. Balances and stats, side by side. No more relitigating who had the harder month — just an honest ledger you both already trust.",
+    body: "A shared calendar of who's been off and when, plus balances and stats side by side — and it syncs straight into your own Google or Apple calendar too, so you're both on the same page in more ways than one. No more relitigating who had the harder month — just an honest ledger you both already trust.",
     Icon: IconCalendarGrid,
   },
   {
