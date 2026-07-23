@@ -96,6 +96,7 @@ export function RequestPtoDialog({
 
   const valid = title.trim().length > 0 && !!date;
   const weight = weights[category];
+  const isManual = household.partner_mode === "manual";
 
   const occurrenceCount = useMemo(() => {
     if (frequency === "none" || !valid) return 1;
@@ -174,13 +175,21 @@ export function RequestPtoDialog({
           </div>
 
           <p className="bg-muted rounded-md p-2 text-sm">
-            {formatPoints(weight)} banked to {partnerName} {isEdit ? "when re-approved" : "once approved"}.
+            {formatPoints(weight)} banked to {partnerName}{" "}
+            {isEdit ? (isManual ? "— updated immediately" : "when re-approved") : "once approved"}.
           </p>
 
-          {isEdit && wasApproved && (
+          {isEdit && wasApproved && !isManual && (
             <p className="border-warning bg-warning/10 text-warning rounded-md border p-2 text-sm">
               This request is already approved. Saving changes sends it back to {partnerName} for
               re-approval, and the banked points update only once they approve again.
+            </p>
+          )}
+
+          {isEdit && wasApproved && isManual && (
+            <p className="border-warning bg-warning/10 text-warning rounded-md border p-2 text-sm">
+              This request is already approved. Since {partnerName} isn&apos;t on MyTO, saving
+              changes updates the banked points immediately — there&apos;s no one to re-approve it.
             </p>
           )}
 
