@@ -8,6 +8,7 @@ import { CoffeeLink } from "@/components/coffee-link";
 import { HighContrastToggle } from "@/components/high-contrast-toggle";
 import { MobileNav, MobileNavLink, MobileNavRow } from "@/components/ui/mobile-nav";
 import { buttonVariants } from "@/components/ui/button";
+import { SocialLinks } from "@/components/social-links";
 
 export default async function DashboardLayout({
   children,
@@ -86,14 +87,20 @@ export default async function DashboardLayout({
         {children}
       </main>
       <footer className="border-t">
-        <div className="text-muted-foreground mx-auto flex w-full max-w-4xl items-center justify-center gap-3 px-4 py-3 text-xs">
-          <CoffeeLink />
-          <Link href="/contact" className="hover:text-foreground underline">
-            Tell us what you think
-          </Link>
-          <Link href="/privacy" className="hover:text-foreground underline">
-            Privacy
-          </Link>
+        <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-center gap-3 px-4 py-3">
+          <div className="text-muted-foreground flex flex-wrap items-center justify-center gap-3 text-xs">
+            <CoffeeLink />
+            <Link href="/contact" className="hover:text-foreground underline">
+              Tell us what you think
+            </Link>
+            <Link href="/privacy" className="hover:text-foreground underline">
+              Privacy
+            </Link>
+            <Link href="/about" className="hover:text-foreground underline">
+              About
+            </Link>
+          </div>
+          <SocialLinks />
         </div>
       </footer>
     </div>

@@ -219,6 +219,9 @@ export default function LoginPage() {
       </p>
 
       <AuthFooterLinks>
+        <Link href="/about" className="hover:text-foreground underline">
+          About
+        </Link>
         <HighContrastToggle />
         <CoffeeLink />
       </AuthFooterLinks>

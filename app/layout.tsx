@@ -28,10 +28,29 @@ const newsreader = Newsreader({
   style: ["normal", "italic"],
 });
 
+const SITE_URL = "https://parental-pto.vercel.app";
+const TITLE = "MyTO — time to be you";
+const DESCRIPTION =
+  "A shared ledger for two people who trade off, so neither of you has to keep score in your head. Especially for parents, who need it most.";
+
 export const metadata: Metadata = {
-  title: "MyTO — time to be you",
-  description:
-    "MyTO (my time off): a shared ledger for two people who trade off, so you can reclaim the time to be you. Especially for parents, who need it most.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE_URL,
+    siteName: "MyTO",
+    type: "website",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: TITLE }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/opengraph-image"],
+  },
 };
 
 export const viewport: Viewport = {
