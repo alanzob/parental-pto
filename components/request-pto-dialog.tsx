@@ -82,6 +82,13 @@ export function RequestPtoDialog({
     category: OffCategory | "trip";
     departurePeriod: TripPeriod | null;
     returnPeriod: TripPeriod | null;
+    /** Plain start/end calendar dates (yyyy-mm-dd) for a trip — the
+     * server uses these directly for the departure/middle/return day
+     * count, since deriving dates back out of a timestamp needs a
+     * timezone assumption that has no guaranteed relationship to the
+     * browser that built the timestamp in the first place. */
+    departureDate: string | null;
+    returnDate: string | null;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
@@ -143,6 +150,8 @@ export function RequestPtoDialog({
       category: isTrip ? "trip" : category,
       departurePeriod: isTrip ? departurePeriod : null,
       returnPeriod: isTrip ? returnPeriod : null,
+      departureDate: isTrip ? date : null,
+      returnDate: isTrip ? endDate : null,
       note,
       frequency: isEdit || isTrip ? "none" : frequency,
       endsBy: !isEdit && !isTrip && frequency !== "none" ? endsBy : null,

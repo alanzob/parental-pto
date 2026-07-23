@@ -180,6 +180,8 @@ export function DashboardClient({
     category: OffCategory | "trip";
     departurePeriod: TripPeriod | null;
     returnPeriod: TripPeriod | null;
+    departureDate: string | null;
+    returnDate: string | null;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
@@ -221,6 +223,8 @@ export function DashboardClient({
       p_for_partner: input.forPartner,
       p_departure_period: input.departurePeriod,
       p_return_period: input.returnPeriod,
+      p_departure_date: input.departureDate,
+      p_return_date: input.returnDate,
     });
     if (error) {
       toast.error(friendlyRpcError(error.message));
@@ -259,6 +263,8 @@ export function DashboardClient({
     category: OffCategory | "trip";
     departurePeriod: TripPeriod | null;
     returnPeriod: TripPeriod | null;
+    departureDate: string | null;
+    returnDate: string | null;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
@@ -275,6 +281,8 @@ export function DashboardClient({
       p_note: input.note || null,
       p_departure_period: input.departurePeriod,
       p_return_period: input.returnPeriod,
+      p_departure_date: input.departureDate,
+      p_return_date: input.returnDate,
     });
     if (error) {
       toast.error(friendlyRpcError(error.message));
