@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppLogo, APP_TITLE_CLASS } from "@/components/app-logo";
 import { buttonVariants } from "@/components/ui/button";
+import { SiteFooter } from "@/components/site-footer";
 import {
   IconImbalance,
   IconBlankLedger,
@@ -172,6 +173,8 @@ export default function HowItWorksPage() {
           )}
         </div>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

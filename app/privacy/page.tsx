@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppLogo, APP_TITLE_CLASS } from "@/components/app-logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SiteFooter } from "@/components/site-footer";
 
 export const metadata = { title: "Privacy — MyTO" };
 
@@ -113,6 +114,8 @@ export default function PrivacyPage() {
           </CardContent>
         </Card>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

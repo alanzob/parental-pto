@@ -3,6 +3,7 @@ import { IBM_Plex_Sans, IBM_Plex_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ChudModeProvider } from "@/components/chud-mode-provider";
+import { BetaBanner } from "@/components/beta-banner";
 
 // Editorial × drafting type system:
 //  - IBM Plex Sans  → body / forms (humanist workhorse)
@@ -65,6 +66,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <ChudModeProvider>
+          <BetaBanner />
           {children}
           <Toaster />
         </ChudModeProvider>

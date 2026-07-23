@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AuthShell, AuthFooterLinks, AuthFooterLink } from "@/components/brand/auth-shell";
+import { AuthShell, AuthFooterLinks } from "@/components/brand/auth-shell";
 import { CoffeeLink } from "@/components/coffee-link";
 import { HighContrastToggle } from "@/components/high-contrast-toggle";
 import { toast } from "sonner";
@@ -219,7 +219,6 @@ export default function LoginPage() {
       </p>
 
       <AuthFooterLinks>
-        <AuthFooterLink href="/privacy">Privacy</AuthFooterLink>
         <HighContrastToggle />
         <CoffeeLink />
       </AuthFooterLinks>
