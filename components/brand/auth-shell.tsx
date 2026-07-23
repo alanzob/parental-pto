@@ -52,7 +52,7 @@ export function AuthShell({
                   {line}
                 </p>
               ))}
-              <p className="font-heading text-sm italic">My Time Off</p>
+              <p className="font-heading text-sm italic">Me Time</p>
             </div>
           </div>
         </aside>

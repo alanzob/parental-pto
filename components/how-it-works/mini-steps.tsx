@@ -1,8 +1,8 @@
 const STEPS = [
   {
     n: "01",
-    title: "Clock out to be you",
-    body: "Request time off — a night out, a run, a quiet afternoon alone.",
+    title: "Claim your Me Time",
+    body: "A night out, a run, a quiet afternoon alone — set a start and an end.",
   },
   {
     n: "02",

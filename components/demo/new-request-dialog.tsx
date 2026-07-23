@@ -114,11 +114,11 @@ export function NewRequestDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit request" : "Request time off"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Me Time" : "Claim Me Time"}</DialogTitle>
           <DialogDescription>
             {isEdit
               ? "Changing the title alone saves instantly; changing dates or times recalculates the points and resends it for approval."
-              : "Pick the dates and what kind of time off it is."}
+              : "Pick the dates and what kind of Me Time it is."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">

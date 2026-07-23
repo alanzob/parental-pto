@@ -38,19 +38,19 @@ const STEPS: Step[] = [
   {
     kicker: "The idea",
     title: "Make the invisible, visible",
-    body: "MyTO turns your time off into something as concrete as vacation days: a single, shared ledger you can both see. Not to keep score for its own sake — to make fairness a fact you can point to, instead of an argument you have to win.",
+    body: "MyTO turns your Me Time into something as concrete as vacation days: a single, shared ledger you can both see. Not to keep score for its own sake — to make fairness a fact you can point to, instead of an argument you have to win.",
     Icon: IconLedgerBalanced,
   },
   {
     kicker: "How it works · 1",
-    title: "Clock out to be you",
-    body: "Request time off with a start and an end — a night out, a long run, a class, or just a quiet afternoon alone. The app does the math, including a fair premium for the hours that cost more. Bedtime on a weeknight isn't the same as a Tuesday lunch.",
+    title: "Claim your Me Time",
+    body: "Set a start and an end — a night out, a long run, a class, or just a quiet afternoon alone. The app does the math, including a fair premium for the hours that cost more. Bedtime on a weeknight isn't the same as a Tuesday lunch.",
     Icon: IconDuration,
   },
   {
     kicker: "How it works · 2",
     title: "Credit goes to whoever covered",
-    body: "When your partner approves the request, the balance credits to them — not you. Taking time for yourself has a real cost, and it's paid automatically to whoever held things down, visible to you both the moment it's approved.",
+    body: "When your partner approves it, the balance credits to them — not you. Taking Me Time has a real cost, and it's paid automatically to whoever held things down, visible to you both the moment it's approved.",
     Icon: IconCreditTransfer,
   },
   {

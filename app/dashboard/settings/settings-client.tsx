@@ -295,7 +295,7 @@ export function SettingsClient({
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Category weights (points)</Label>
               <p className="text-muted-foreground text-xs">
-                How many points each kind of time off banks. A day off is worth more than a single
+                How many points each kind of Me Time banks. A full day is worth more than a single
                 part of the day — tune these to whatever feels fair for the two of you.
               </p>
             </div>
@@ -512,7 +512,7 @@ export function SettingsClient({
           <CardTitle>Calendar feed</CardTitle>
           <CardDescription>
             A private link — anyone who has it can view your household&apos;s
-            approved time off, so treat it like a password and regenerate it
+            approved Me Time, so treat it like a password and regenerate it
             if it ever leaks. Subscribe from Google Calendar
             (&quot;Other calendars → From URL&quot;) or Apple Calendar
             (&quot;File → New Calendar Subscription&quot;). Calendar apps

@@ -70,7 +70,7 @@ export default function PrivacyPage() {
             </p>
             <p>
               The calendar feed link (if you generate one) works like a shared secret — anyone
-              who has the URL can view your household&apos;s approved time off, so treat it like a
+              who has the URL can view your household&apos;s approved Me Time, so treat it like a
               password and regenerate it from Settings if it ever leaks.
             </p>
           </CardContent>

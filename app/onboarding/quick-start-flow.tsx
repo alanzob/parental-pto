@@ -190,7 +190,7 @@ export function QuickStartFlow() {
       </div>
 
       <div className="space-y-2 border-t pt-3">
-        <Label>Log recent or upcoming time off</Label>
+        <Label>Log recent or upcoming Me Time</Label>
         <p className="text-muted-foreground text-xs">
           Anything from the last few months, or things already on the books — both count.
         </p>
