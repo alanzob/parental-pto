@@ -6,8 +6,8 @@ export type { OffCategory };
 export type DemoPerson = "brian" | "vanda";
 
 export const DEMO_PEOPLE: Record<DemoPerson, { name: string }> = {
-  brian: { name: "Brian Bear" },
-  vanda: { name: "Vanda Bear" },
+  brian: { name: "Mike" },
+  vanda: { name: "Alison" },
 };
 
 export function otherPerson(person: DemoPerson): DemoPerson {
