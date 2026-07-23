@@ -346,8 +346,7 @@ export function RequestPtoDialog({
 
           {isEdit && wasApproved && isManual && (
             <p className="border-warning bg-warning/10 text-warning rounded-md border p-2 text-sm">
-              This request is already approved. Since {partnerName} isn&apos;t on MyTO, a date/time
-              change updates the banked points immediately — there&apos;s no one to re-approve it.
+              {`This request is already approved. Since ${partnerName} isn't on MyTO, changing the date or time updates the banked points immediately — there's no one to re-approve it.`}
             </p>
           )}
 

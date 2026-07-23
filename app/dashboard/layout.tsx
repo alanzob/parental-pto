@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/lib/admin";
 import { DashboardTitle } from "@/components/dashboard-title";
 import { SignOutButton } from "@/components/sign-out-button";
 import { CoffeeLink } from "@/components/coffee-link";
@@ -28,7 +29,7 @@ export default async function DashboardLayout({
 
   if (!profile?.household_id) redirect("/onboarding");
 
-  const isAdmin = !!process.env.ADMIN_EMAIL && user.email === process.env.ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(user.email);
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
@@ -85,9 +86,12 @@ export default async function DashboardLayout({
         {children}
       </main>
       <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-center gap-3 px-4 py-3">
+        <div className="text-muted-foreground mx-auto flex w-full max-w-4xl items-center justify-center gap-3 px-4 py-3 text-xs">
           <CoffeeLink />
-          <Link href="/privacy" className="text-muted-foreground hover:text-foreground text-xs underline">
+          <Link href="/contact" className="hover:text-foreground underline">
+            Tell us what you think
+          </Link>
+          <Link href="/privacy" className="hover:text-foreground underline">
             Privacy
           </Link>
         </div>

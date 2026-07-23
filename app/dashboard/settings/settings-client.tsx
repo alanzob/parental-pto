@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { generateInviteCode } from "@/lib/invite-code";
@@ -20,7 +20,33 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+
+// The full IANA tz database, from the runtime itself — no extra
+// dependency, and it can never drift out of date or admit a typo the way
+// a free-text field could.
+function timezoneOptions(): { value: string; label: string }[] {
+  const zones =
+    typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [];
+  const now = new Date();
+  return zones
+    .map((tz) => {
+      let offset = "";
+      try {
+        offset =
+          new Intl.DateTimeFormat(undefined, { timeZone: tz, timeZoneName: "shortOffset" })
+            .formatToParts(now)
+            .find((p) => p.type === "timeZoneName")?.value ?? "";
+      } catch {
+        // Some runtimes don't support every zone/option combo — fall back
+        // to the bare name rather than failing the whole list.
+      }
+      const label = offset ? `${tz.replace(/_/g, " ")} (${offset})` : tz.replace(/_/g, " ");
+      return { value: tz, label };
+    })
+    .sort((a, b) => a.value.localeCompare(b.value));
+}
 
 export function SettingsClient({
   me,
@@ -35,6 +61,7 @@ export function SettingsClient({
 }) {
   const supabase = createClient();
   const router = useRouter();
+  const timezones = useMemo(() => timezoneOptions(), []);
 
   const [displayName, setDisplayName] = useState(me.display_name ?? "");
   const [savingProfile, setSavingProfile] = useState(false);
@@ -246,17 +273,23 @@ export function SettingsClient({
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="hh-tz">Timezone (IANA name)</Label>
-              <Input
-                id="hh-tz"
+              <Label htmlFor="hh-tz">Timezone</Label>
+              <Select
                 value={form.timezone}
-                onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))}
-                placeholder="America/New_York"
-              />
-              <p className="text-muted-foreground text-xs">
-                Used on your calendar feed — e.g. &quot;America/New_York&quot; or
-                &quot;Europe/London&quot;.
-              </p>
+                onValueChange={(v) => setForm((f) => ({ ...f, timezone: v as string }))}
+              >
+                <SelectTrigger id="hh-tz" className="w-full">
+                  <SelectValue placeholder="Select a timezone" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timezones.map((tz) => (
+                    <SelectItem key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-muted-foreground text-xs">Used on your calendar feed.</p>
             </div>
 
             <div className="space-y-1.5 sm:col-span-2">
