@@ -1,5 +1,6 @@
 import type { PtoTransaction } from "@/lib/types";
 import { categoryLabel, formatPoints, type OffCategory } from "@/lib/pto/categories";
+import { formatTripSpan, tripBlockCount } from "@/lib/pto/trip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,23 @@ type PersonRef = { id: string | null; display_name: string | null };
 
 function fmtDate(date: Date): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function toDateStr(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function tripSummary(r: PtoTransaction): { span: string; blocks: number } | null {
+  if (r.category !== "trip" || !r.departure_period || !r.return_period) return null;
+  const start = new Date(r.occurred_at);
+  const end = new Date(start.getTime() + r.base_hours * 60 * 60 * 1000);
+  const startDate = toDateStr(start);
+  const endDate = toDateStr(end);
+  return {
+    span: formatTripSpan(startDate, r.departure_period, endDate, r.return_period),
+    blocks: tripBlockCount(startDate, r.departure_period, endDate, r.return_period),
+  };
 }
 
 export function RequestsList({
@@ -45,7 +63,8 @@ export function RequestsList({
     <Card>
       <CardContent className="divide-y p-0">
         {requests.map((r) => {
-          const cat = r.category ? categoryLabel(r.category as OffCategory) : "Time off";
+          const trip = tripSummary(r);
+          const cat = r.category && r.category !== "trip" ? categoryLabel(r.category as OffCategory) : "Time off";
           const canRespond = r.status === "pending" && r.user_id === me.id;
           // In a manual household there's only one real member, so they
           // manage every request — including ones logged on the manual
@@ -70,8 +89,18 @@ export function RequestsList({
                   )}
                 </p>
                 <p className="text-muted-foreground font-mono text-xs">
-                  {nameFor(r.initiated_by)} · {cat} · {fmtDate(new Date(r.occurred_at))} ·{" "}
-                  {formatPoints(r.final_cost)} banked to {nameFor(r.user_id)}
+                  {trip ? (
+                    <>
+                      {nameFor(r.initiated_by)} · {trip.span} · {trip.blocks} coverage block
+                      {trip.blocks === 1 ? "" : "s"} · {formatPoints(r.final_cost)} banked to{" "}
+                      {nameFor(r.user_id)}
+                    </>
+                  ) : (
+                    <>
+                      {nameFor(r.initiated_by)} · {cat} · {fmtDate(new Date(r.occurred_at))} ·{" "}
+                      {formatPoints(r.final_cost)} banked to {nameFor(r.user_id)}
+                    </>
+                  )}
                   {r.note && ` · ${r.note}`}
                 </p>
               </div>

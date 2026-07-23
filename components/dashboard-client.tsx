@@ -15,6 +15,7 @@ import { SeriesControls, type SeriesSummary } from "@/components/pto/series-cont
 import { computeDisparitySeries, type DisparityEvent } from "@/lib/pto/disparity";
 import type { Frequency } from "@/lib/pto/recurrence";
 import { formatPoints, type OffCategory } from "@/lib/pto/categories";
+import { tripCalendarEntries, type TripPeriod } from "@/lib/pto/trip";
 import { CalendarFeedCallout } from "@/components/calendar-feed-callout";
 import { ResearchNotesWidget } from "@/components/pto/research-notes-widget";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -22,6 +23,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 
 type PersonRef = { id: string | null; display_name: string | null };
+
+function toDateInputLocal(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
 
 export function DashboardClient({
   me,
@@ -55,13 +61,28 @@ export function DashboardClient({
 
   const calendarEntries = useMemo<HeatmapEntry[]>(() => {
     if (!partner) return [];
-    return requests
-      .filter((r) => r.status === "approved" && r.category)
-      .map((r) => ({
-        date: new Date(r.occurred_at),
-        category: r.category as OffCategory,
-        person: r.initiated_by === me.id ? ("a" as const) : ("b" as const),
-      }));
+    const entries: HeatmapEntry[] = [];
+    for (const r of requests) {
+      if (r.status !== "approved" || !r.category) continue;
+      const person = r.initiated_by === me.id ? ("a" as const) : ("b" as const);
+      if (r.category === "trip" && r.departure_period && r.return_period) {
+        const start = new Date(r.occurred_at);
+        const end = new Date(start.getTime() + r.base_hours * 60 * 60 * 1000);
+        const trip = tripCalendarEntries(
+          toDateInputLocal(start),
+          r.departure_period,
+          toDateInputLocal(end),
+          r.return_period,
+        );
+        for (const t of trip) {
+          const [y, m, d] = t.date.split("-").map(Number);
+          entries.push({ date: new Date(y, m - 1, d), category: t.category, person });
+        }
+      } else {
+        entries.push({ date: new Date(r.occurred_at), category: r.category as OffCategory, person });
+      }
+    }
+    return entries;
   }, [requests, me.id, partner]);
 
   const statsRows = useMemo<StatRow[]>(() => {
@@ -156,7 +177,9 @@ export function DashboardClient({
     title: string;
     offDutyStart: string;
     backOnDuty: string;
-    category: OffCategory;
+    category: OffCategory | "trip";
+    departurePeriod: TripPeriod | null;
+    returnPeriod: TripPeriod | null;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
@@ -196,6 +219,8 @@ export function DashboardClient({
       p_category: input.category,
       p_note: input.note || null,
       p_for_partner: input.forPartner,
+      p_departure_period: input.departurePeriod,
+      p_return_period: input.returnPeriod,
     });
     if (error) {
       toast.error(friendlyRpcError(error.message));
@@ -231,7 +256,9 @@ export function DashboardClient({
     title: string;
     offDutyStart: string;
     backOnDuty: string;
-    category: OffCategory;
+    category: OffCategory | "trip";
+    departurePeriod: TripPeriod | null;
+    returnPeriod: TripPeriod | null;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
@@ -239,19 +266,23 @@ export function DashboardClient({
   }) {
     if (!editing) return false;
     const wasApproved = editing.status === "approved";
-    const { error } = await supabase.rpc("edit_pto_request", {
+    const { data, error } = await supabase.rpc("edit_pto_request", {
       p_transaction_id: editing.id,
+      p_title: input.title,
       p_off_duty_start: input.offDutyStart,
       p_back_on_duty: input.backOnDuty,
       p_category: input.category,
       p_note: input.note || null,
+      p_departure_period: input.departurePeriod,
+      p_return_period: input.returnPeriod,
     });
     if (error) {
       toast.error(friendlyRpcError(error.message));
       return false;
     }
+    const nowPending = wasApproved && data?.status === "pending";
     toast.success(
-      wasApproved && household.partner_mode !== "manual"
+      nowPending
         ? `Updated — sent back to ${partner?.display_name ?? "your partner"} for re-approval.`
         : "Request updated.",
     );
@@ -455,12 +486,13 @@ export function DashboardClient({
           wasApproved={editing.status === "approved"}
           initial={{
             title: editing.title,
-            date: (() => {
-              const d = new Date(editing.occurred_at);
-              const pad = (n: number) => String(n).padStart(2, "0");
-              return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-            })(),
-            category: (editing.category ?? "evening") as OffCategory,
+            date: toDateInputLocal(new Date(editing.occurred_at)),
+            endDate: toDateInputLocal(
+              new Date(new Date(editing.occurred_at).getTime() + editing.base_hours * 60 * 60 * 1000),
+            ),
+            category: (editing.category ?? "evening") as OffCategory | "trip",
+            departurePeriod: editing.departure_period ?? undefined,
+            returnPeriod: editing.return_period ?? undefined,
             note: editing.note ?? "",
           }}
           household={household}

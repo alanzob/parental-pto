@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useDemo } from "@/components/demo/demo-provider";
-import { DEMO_PEOPLE, weightOf, type DemoPerson } from "@/lib/demo/types";
+import { DEMO_PEOPLE, weightOfRequest, type DemoPerson } from "@/lib/demo/types";
 import { formatPoints } from "@/lib/pto/categories";
 import { ComparativeStats, type StatRow } from "@/components/pto/comparative-stats";
 
@@ -29,7 +29,7 @@ export function StatsPanel() {
         p,
         requests
           .filter((r) => r.requestedBy === p && r.status === "approved")
-          .reduce((sum, r) => sum + weightOf(r.category), 0),
+          .reduce((sum, r) => sum + weightOfRequest(r), 0),
       ]),
     ) as Record<DemoPerson, number>;
 

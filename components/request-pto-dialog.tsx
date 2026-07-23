@@ -20,6 +20,12 @@ import {
   type CategoryWeights,
   type OffCategory,
 } from "@/lib/pto/categories";
+import {
+  TRIP_PERIODS,
+  tripWindow,
+  tripWeight,
+  type TripPeriod,
+} from "@/lib/pto/trip";
 import { occurrenceStarts, type Frequency } from "@/lib/pto/recurrence";
 import { cn } from "@/lib/utils";
 import type { Household } from "@/lib/types";
@@ -47,9 +53,12 @@ export function weightsFromHousehold(h: Household): CategoryWeights {
 
 export type RequestDialogInitial = {
   title: string;
-  date: string; // yyyy-mm-dd
-  category: OffCategory;
+  date: string; // yyyy-mm-dd — start date for a trip
+  category: OffCategory | "trip";
   note: string;
+  endDate?: string;
+  departurePeriod?: TripPeriod;
+  returnPeriod?: TripPeriod;
 };
 
 export function RequestPtoDialog({
@@ -70,7 +79,9 @@ export function RequestPtoDialog({
     title: string;
     offDutyStart: string;
     backOnDuty: string;
-    category: OffCategory;
+    category: OffCategory | "trip";
+    departurePeriod: TripPeriod | null;
+    returnPeriod: TripPeriod | null;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
@@ -82,10 +93,18 @@ export function RequestPtoDialog({
 }) {
   const isEdit = mode === "edit";
   const weights = weightsFromHousehold(household);
+  const initialIsTrip = initial?.category === "trip";
 
   const [title, setTitle] = useState(initial?.title ?? "");
   const [date, setDate] = useState(initial?.date ?? toDateInput(new Date()));
-  const [category, setCategory] = useState<OffCategory>(initial?.category ?? "evening");
+  const [endDate, setEndDate] = useState(initial?.endDate ?? initial?.date ?? toDateInput(new Date()));
+  const [category, setCategory] = useState<OffCategory>(
+    initialIsTrip ? "evening" : ((initial?.category as OffCategory) ?? "evening"),
+  );
+  const [departurePeriod, setDeparturePeriod] = useState<TripPeriod>(
+    initial?.departurePeriod ?? "evening",
+  );
+  const [returnPeriod, setReturnPeriod] = useState<TripPeriod>(initial?.returnPeriod ?? "evening");
   const [note, setNote] = useState(initial?.note ?? "");
   const [forPartner, setForPartner] = useState(false);
   const [frequency, setFrequency] = useState<Frequency>("none");
@@ -96,28 +115,37 @@ export function RequestPtoDialog({
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const valid = title.trim().length > 0 && !!date;
-  const weight = weights[category];
+  const isTrip = endDate > date;
+  const valid = title.trim().length > 0 && !!date && !!endDate && endDate >= date;
   const isManual = household.partner_mode === "manual";
 
+  const weight = useMemo(() => {
+    if (isTrip) return tripWeight(weights, date, departurePeriod, endDate, returnPeriod);
+    return weights[category];
+  }, [isTrip, date, endDate, departurePeriod, returnPeriod, category, weights]);
+
   const occurrenceCount = useMemo(() => {
-    if (frequency === "none" || !valid) return 1;
+    if (isTrip || frequency === "none" || !valid) return 1;
     return occurrenceStarts(categoryWindow(date, category).start, new Date(endsBy), frequency).length;
-  }, [frequency, endsBy, date, category, valid]);
+  }, [isTrip, frequency, endsBy, date, category, valid]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
     setSubmitting(true);
-    const { start, end } = categoryWindow(date, category);
+    const { start, end } = isTrip
+      ? tripWindow(date, departurePeriod, endDate, returnPeriod)
+      : categoryWindow(date, category);
     const ok = await onSubmit({
       title: title.trim(),
       offDutyStart: start.toISOString(),
       backOnDuty: end.toISOString(),
-      category,
+      category: isTrip ? "trip" : category,
+      departurePeriod: isTrip ? departurePeriod : null,
+      returnPeriod: isTrip ? returnPeriod : null,
       note,
-      frequency: isEdit ? "none" : frequency,
-      endsBy: !isEdit && frequency !== "none" ? endsBy : null,
+      frequency: isEdit || isTrip ? "none" : frequency,
+      endsBy: !isEdit && !isTrip && frequency !== "none" ? endsBy : null,
       forPartner: !isEdit && isManual && forPartner,
     });
     setSubmitting(false);
@@ -131,10 +159,10 @@ export function RequestPtoDialog({
           <DialogTitle>{isEdit ? "Edit request" : "Request time off"}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? "Adjust the date or category for this request."
+              ? "Adjust the details of this request. Changing the title alone saves instantly; changing dates or times recalculates the points and re-sends it for approval."
               : isManual && forPartner
-                ? `Pick a date and what kind of time off ${partnerName} took. You bank the points immediately.`
-                : `Pick a date and what kind of time off it is. ${partnerName} banks the points once they approve.`}
+                ? `Pick the dates and what kind of time off ${partnerName} took. You bank the points immediately.`
+                : `Pick the dates and what kind of time off it is. ${partnerName} banks the points once they approve.`}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -184,40 +212,109 @@ export function RequestPtoDialog({
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Dinner with friends"
+              placeholder="e.g. Dinner with friends, or Lake House weekend"
               required
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="date">Date</Label>
-            <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Category</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {OFF_CATEGORIES.map((c) => (
-                <button
-                  key={c.value}
-                  type="button"
-                  onClick={() => setCategory(c.value)}
-                  aria-pressed={category === c.value}
-                  className={cn(
-                    "border-border flex items-center justify-between rounded-sm border px-3 py-2 text-sm transition-colors",
-                    category === c.value
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "hover:bg-muted",
-                  )}
-                >
-                  <span>{c.label}</span>
-                  <span className="font-mono text-xs tabular-nums opacity-80">
-                    {formatPoints(weights[c.value])}
-                  </span>
-                </button>
-              ))}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="date">Start date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  if (endDate < e.target.value) setEndDate(e.target.value);
+                }}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="end-date">End date</Label>
+              <Input
+                id="end-date"
+                type="date"
+                value={endDate}
+                min={date}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+              />
             </div>
           </div>
+
+          {isTrip ? (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Departure — {date}</Label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {TRIP_PERIODS.map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setDeparturePeriod(p.value)}
+                      aria-pressed={departurePeriod === p.value}
+                      className={cn(
+                        "border-border rounded-sm border px-2 py-1.5 text-sm transition-colors",
+                        departurePeriod === p.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "hover:bg-muted",
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Return — {endDate}</Label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {TRIP_PERIODS.map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setReturnPeriod(p.value)}
+                      aria-pressed={returnPeriod === p.value}
+                      className={cn(
+                        "border-border rounded-sm border px-2 py-1.5 text-sm transition-colors",
+                        returnPeriod === p.value
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "hover:bg-muted",
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label>Category</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {OFF_CATEGORIES.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setCategory(c.value)}
+                    aria-pressed={category === c.value}
+                    className={cn(
+                      "border-border flex items-center justify-between rounded-sm border px-3 py-2 text-sm transition-colors",
+                      category === c.value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "hover:bg-muted",
+                    )}
+                  >
+                    <span>{c.label}</span>
+                    <span className="font-mono text-xs tabular-nums opacity-80">
+                      {formatPoints(weights[c.value])}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <p className="bg-muted rounded-md p-2 text-sm">
             {!isEdit && isManual && forPartner ? (
@@ -232,19 +329,20 @@ export function RequestPtoDialog({
 
           {isEdit && wasApproved && !isManual && (
             <p className="border-warning bg-warning/10 text-warning rounded-md border p-2 text-sm">
-              This request is already approved. Saving changes sends it back to {partnerName} for
-              re-approval, and the banked points update only once they approve again.
+              This request is already approved. Only a title/note change saves instantly — changing
+              dates or times sends it back to {partnerName} for re-approval, and the banked points
+              update only once they approve again.
             </p>
           )}
 
           {isEdit && wasApproved && isManual && (
             <p className="border-warning bg-warning/10 text-warning rounded-md border p-2 text-sm">
-              This request is already approved. Since {partnerName} isn&apos;t on MyTO, saving
-              changes updates the banked points immediately — there&apos;s no one to re-approve it.
+              This request is already approved. Since {partnerName} isn&apos;t on MyTO, a date/time
+              change updates the banked points immediately — there&apos;s no one to re-approve it.
             </p>
           )}
 
-          {!isEdit && (
+          {!isEdit && !isTrip && (
             <div className="space-y-1.5">
               <Label>Repeat</Label>
               <div className="flex flex-wrap gap-1.5">
@@ -284,6 +382,11 @@ export function RequestPtoDialog({
               )}
             </div>
           )}
+          {!isEdit && isTrip && (
+            <p className="text-muted-foreground text-xs">
+              Multi-day trips are always one-off — Repeat isn&apos;t available for them.
+            </p>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="note">Note (optional)</Label>
@@ -296,10 +399,10 @@ export function RequestPtoDialog({
                 : isEdit
                   ? "Save changes"
                   : isManual && forPartner
-                    ? frequency !== "none"
+                    ? frequency !== "none" && !isTrip
                       ? `Log ${occurrenceCount} entries`
                       : "Log entry"
-                    : frequency !== "none"
+                    : frequency !== "none" && !isTrip
                       ? `Submit ${occurrenceCount} for approval`
                       : "Submit for approval"}
             </Button>

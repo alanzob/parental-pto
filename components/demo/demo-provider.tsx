@@ -2,17 +2,32 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { seedDemoRequests } from "@/lib/demo/seed";
-import { otherPerson, weightOf, type DemoPerson, type DemoRequest } from "@/lib/demo/types";
+import { otherPerson, weightOfRequest, type DemoPerson, type DemoRequest } from "@/lib/demo/types";
 import { categoryWindow, type OffCategory } from "@/lib/pto/categories";
+import { tripWindow, type TripPeriod } from "@/lib/pto/trip";
 import { occurrenceStarts, type Frequency } from "@/lib/pto/recurrence";
 
 // Bump this whenever lib/demo/seed.ts changes shape or story, so cached
 // localStorage data doesn't hide the new seed.
-const STORAGE_KEY = "parental-pto-demo-v5";
+const STORAGE_KEY = "parental-pto-demo-v6";
 const CLICKS_REQUIRED = 5;
 const CLICK_WINDOW_MS = 2500;
 
-type NewRequestInput = { title: string; date: string; category: OffCategory };
+type NewRequestInput = {
+  title: string;
+  date: string;
+  category: OffCategory | "trip";
+  endDate?: string;
+  departurePeriod?: TripPeriod;
+  returnPeriod?: TripPeriod;
+};
+
+function requestWindow(input: NewRequestInput): { start: Date; end: Date } {
+  if (input.category === "trip" && input.endDate && input.departurePeriod && input.returnPeriod) {
+    return tripWindow(input.date, input.departurePeriod, input.endDate, input.returnPeriod);
+  }
+  return categoryWindow(input.date, input.category as OffCategory);
+}
 
 type DemoContextValue = {
   persona: DemoPerson;
@@ -35,10 +50,6 @@ type DemoContextValue = {
 };
 
 const DemoContext = createContext<DemoContextValue | null>(null);
-
-function isoFor(date: string, category: OffCategory): string {
-  return categoryWindow(date, category).start.toISOString();
-}
 
 function load(): DemoRequest[] {
   if (typeof window === "undefined") return seedDemoRequests();
@@ -78,7 +89,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     (p: DemoPerson) =>
       requests
         .filter((r) => r.status === "approved" && r.creditedTo === p)
-        .reduce((sum, r) => sum + weightOf(r.category), 0),
+        .reduce((sum, r) => sum + weightOfRequest(r), 0),
     [requests],
   );
 
@@ -95,16 +106,19 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
 
   const submitRequest = useCallback(
     (input: NewRequestInput) => {
-      const iso = isoFor(input.date, input.category);
+      const { start, end } = requestWindow(input);
       const newRequest: DemoRequest = {
         id: crypto.randomUUID(),
         title: input.title,
         requestedBy: persona,
         creditedTo: otherPerson(persona),
-        date: iso,
+        date: start.toISOString(),
         category: input.category,
         status: "pending",
         createdAt: new Date().toISOString(),
+        ...(input.category === "trip"
+          ? { endDate: end.toISOString(), departurePeriod: input.departurePeriod, returnPeriod: input.returnPeriod }
+          : {}),
       };
       setRequests((prev) => [newRequest, ...prev]);
     },
@@ -115,7 +129,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     (input: NewRequestInput, frequency: Frequency, endsBy: string) => {
       const seriesId = crypto.randomUUID();
       const creditedTo = otherPerson(persona);
-      const firstStart = categoryWindow(input.date, input.category).start;
+      const firstStart = categoryWindow(input.date, input.category as OffCategory).start;
       const starts = occurrenceStarts(firstStart, new Date(endsBy), frequency);
       const createdAt = new Date().toISOString();
       const instances: DemoRequest[] = starts.map((off) => ({
@@ -172,20 +186,30 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const editRequest = useCallback((id: string, input: NewRequestInput) => {
-    const iso = isoFor(input.date, input.category);
+    const { start, end } = requestWindow(input);
     setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              title: input.title,
-              date: iso,
-              category: input.category,
-              // Re-approve on edit: an approved request drops back to pending.
-              status: r.status === "approved" ? ("pending" as const) : r.status,
-            }
-          : r,
-      ),
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        // Title-only edits don't touch dates/category/points/status — only
+        // recompute + re-approve when something that affects the credit
+        // actually changed.
+        const contentChanged =
+          r.category !== input.category ||
+          r.date !== start.toISOString() ||
+          r.endDate !== (input.category === "trip" ? end.toISOString() : undefined) ||
+          r.departurePeriod !== input.departurePeriod ||
+          r.returnPeriod !== input.returnPeriod;
+        return {
+          ...r,
+          title: input.title,
+          date: start.toISOString(),
+          category: input.category,
+          endDate: input.category === "trip" ? end.toISOString() : undefined,
+          departurePeriod: input.category === "trip" ? input.departurePeriod : undefined,
+          returnPeriod: input.category === "trip" ? input.returnPeriod : undefined,
+          status: contentChanged && r.status === "approved" ? ("pending" as const) : r.status,
+        };
+      }),
     );
   }, []);
 

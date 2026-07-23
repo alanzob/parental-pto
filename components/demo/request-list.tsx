@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useDemo } from "@/components/demo/demo-provider";
-import { DEMO_PEOPLE, weightOf, type DemoRequest } from "@/lib/demo/types";
-import { categoryLabel, formatPoints } from "@/lib/pto/categories";
+import { DEMO_PEOPLE, weightOfRequest, type DemoRequest } from "@/lib/demo/types";
+import { categoryLabel, formatPoints, type OffCategory } from "@/lib/pto/categories";
+import { formatTripSpan, tripBlockCount } from "@/lib/pto/trip";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,22 @@ import { NewRequestDialog } from "@/components/demo/new-request-dialog";
 
 function fmtDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function toDateStr(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function tripSummary(r: DemoRequest): { span: string; blocks: number } | null {
+  if (r.category !== "trip" || !r.endDate || !r.departurePeriod || !r.returnPeriod) return null;
+  const startDate = toDateStr(r.date);
+  const endDate = toDateStr(r.endDate);
+  return {
+    span: formatTripSpan(startDate, r.departurePeriod, endDate, r.returnPeriod),
+    blocks: tripBlockCount(startDate, r.departurePeriod, endDate, r.returnPeriod),
+  };
 }
 
 export function RequestList() {
@@ -26,6 +43,7 @@ export function RequestList() {
       <Card>
         <CardContent className="divide-y p-0">
           {sorted.map((r) => {
+            const trip = tripSummary(r);
             const canRespond = r.status === "pending" && r.creditedTo === persona;
             const canManage =
               (r.status === "pending" || r.status === "approved") && r.requestedBy === persona;
@@ -44,9 +62,19 @@ export function RequestList() {
                     )}
                   </p>
                   <p className="text-muted-foreground font-mono text-xs">
-                    {DEMO_PEOPLE[r.requestedBy].name} · {categoryLabel(r.category)} ·{" "}
-                    {fmtDate(r.date)} · {formatPoints(weightOf(r.category))} banked to{" "}
-                    {DEMO_PEOPLE[r.creditedTo].name}
+                    {trip ? (
+                      <>
+                        {DEMO_PEOPLE[r.requestedBy].name} · {trip.span} · {trip.blocks} coverage block
+                        {trip.blocks === 1 ? "" : "s"} · {formatPoints(weightOfRequest(r))} banked to{" "}
+                        {DEMO_PEOPLE[r.creditedTo].name}
+                      </>
+                    ) : (
+                      <>
+                        {DEMO_PEOPLE[r.requestedBy].name} · {categoryLabel(r.category as OffCategory)} ·{" "}
+                        {fmtDate(r.date)} · {formatPoints(weightOfRequest(r))} banked to{" "}
+                        {DEMO_PEOPLE[r.creditedTo].name}
+                      </>
+                    )}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-2">

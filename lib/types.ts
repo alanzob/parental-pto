@@ -66,8 +66,9 @@ export type PtoTransaction = {
   initiated_by: string | null;
   transaction_type: "request";
   title: string;
-  /** null on legacy pre-0008 rows; every new request has one. */
-  category: import("@/lib/pto/categories").OffCategory | null;
+  /** null on legacy pre-0008 rows; every new request has one. 'trip' means
+   * a multi-day span — see departure_period/return_period. */
+  category: import("@/lib/pto/categories").OffCategory | "trip" | null;
   base_hours: number;
   multiplier: number;
   /** The credited amount, now in points (the category weight). */
@@ -76,6 +77,9 @@ export type PtoTransaction = {
   note: string | null;
   /** Groups instances generated from one recurring series; null for one-offs. */
   series_id: string | null;
+  /** Set together, only when category = 'trip'. */
+  departure_period: import("@/lib/pto/trip").TripPeriod | null;
+  return_period: import("@/lib/pto/trip").TripPeriod | null;
   occurred_at: string;
   created_at: string;
 };
