@@ -35,7 +35,7 @@ export function StatsPanel() {
 
     return [
       {
-        label: "ME TIME TAKEN (APPROVED)",
+        label: "MY TIME TAKEN (APPROVED)",
         a: formatPoints(pointsOff.brian),
         b: formatPoints(pointsOff.vanda),
       },

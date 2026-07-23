@@ -81,7 +81,7 @@ function DemoShell() {
               setNonce((n) => n + 1);
             }}
           >
-            Claim Me Time
+            Claim My Time
           </Button>
           <a href="#activity" className={buttonVariants({ variant: "outline" })}>
             View activity
@@ -104,7 +104,7 @@ function DemoShell() {
               setNonce((n) => n + 1);
             }}
           >
-            Claim Me Time
+            Claim My Time
           </Button>
           <a
             href="#activity"

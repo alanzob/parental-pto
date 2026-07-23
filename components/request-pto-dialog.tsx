@@ -165,13 +165,13 @@ export function RequestPtoDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit Me Time" : "Claim Me Time"}</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit My Time" : "Claim My Time"}</DialogTitle>
           <DialogDescription>
             {isEdit
               ? "Adjust the details of this request. Changing the title alone saves instantly; changing dates or times recalculates the points and re-sends it for approval."
               : isManual && forPartner
-                ? `Pick the dates and what kind of Me Time ${partnerName} took. You bank the points immediately.`
-                : `Pick the dates and what kind of Me Time it is. ${partnerName} banks the points once they approve.`}
+                ? `Pick the dates and what kind of My Time ${partnerName} took. You bank the points immediately.`
+                : `Pick the dates and what kind of My Time it is. ${partnerName} banks the points once they approve.`}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -208,7 +208,7 @@ export function RequestPtoDialog({
               </div>
               {forPartner && (
                 <p className="text-muted-foreground text-xs">
-                  Since {partnerName} isn&apos;t on MyTO yet, logging their Me Time banks the
+                  Since {partnerName} isn&apos;t on MyTO yet, logging their My Time banks the
                   points to you right away — no approval needed.
                 </p>
               )}

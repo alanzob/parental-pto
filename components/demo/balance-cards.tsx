@@ -30,7 +30,7 @@ export function BalanceCards() {
                 {isInfinite ? "∞" : formatPoints(points)}
               </p>
               <p className="text-muted-foreground font-mono text-sm">
-                {isInfinite ? "UNLIMITED ME-TIME" : "banked"}
+                {isInfinite ? "UNLIMITED MY TIME" : "banked"}
               </p>
             </CardContent>
           </Card>

@@ -38,11 +38,11 @@ export function formatCompactDuration(fullDays: number, hours: number): string {
   return `${fullDays}d ${formatHours(hours)}h`;
 }
 
-/** Longer "3 Full Days, 4.5 Hours of Me-Time" style, for previews and
+/** Longer "3 Full Days, 4.5 Hours of My Time" style, for previews and
  * request summaries. */
 export function formatDuration(fullDays: number, hours: number): string {
   const parts: string[] = [];
   if (fullDays > 0) parts.push(`${fullDays} Full Day${fullDays === 1 ? "" : "s"}`);
   if (hours > 0 || parts.length === 0) parts.push(`${formatHours(hours)} Hour${hours === 1 ? "" : "s"}`);
-  return `${parts.join(", ")} of Me-Time`;
+  return `${parts.join(", ")} of My Time`;
 }

@@ -40,7 +40,7 @@ function bandBackground(colorA: string, colorB: string, a: boolean, b: boolean):
 }
 
 export function PtoCalendarHeatmap({
-  title = "Me-Time Schedule — 3 Months Back, 9 Forward",
+  title = "My Time Schedule — 3 Months Back, 9 Forward",
   entries,
   labelA,
   labelB,

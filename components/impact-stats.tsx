@@ -21,13 +21,13 @@ export function ImpactStats({ stats, className = "" }: { stats: PublicStats; cla
     <div className={`flex flex-wrap gap-3 ${className}`}>
       <StatTile
         value={stats.householdsTradingOff}
-        label={stats.householdsTradingOff === 1 ? "household trading Me Time" : "households trading Me Time"}
+        label={stats.householdsTradingOff === 1 ? "household trading My Time" : "households trading My Time"}
       />
       <StatTile
         value={stats.timesCoveredForEachOther}
         label="times partners covered for each other"
       />
-      <StatTile value={stats.hoursBanked} label="hours of Me Time banked" />
+      <StatTile value={stats.hoursBanked} label="hours of My Time banked" />
     </div>
   );
 }

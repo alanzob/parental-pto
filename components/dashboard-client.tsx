@@ -97,7 +97,7 @@ export function DashboardClient({
 
     return [
       {
-        label: "ME TIME TAKEN (APPROVED)",
+        label: "MY TIME TAKEN (APPROVED)",
         a: formatPoints(pointsOffFor(me.id)),
         b: formatPoints(pointsOffFor(partner.id)),
       },
@@ -406,7 +406,7 @@ export function DashboardClient({
           }}
           disabled={!partner}
         >
-          Claim Me Time
+          Claim My Time
         </Button>
         <a href="#activity" className={buttonVariants({ variant: "outline" })}>
           View activity
@@ -519,7 +519,7 @@ export function DashboardClient({
 const RPC_ERROR_MESSAGES: Record<string, string> = {
   SELF_APPROVAL_BLOCKED: "You can't approve or deny your own request.",
   ALREADY_RESOLVED: "That request was already handled.",
-  NO_PARTNER: "Invite your partner before claiming Me Time.",
+  NO_PARTNER: "Invite your partner before claiming My Time.",
   INVALID_TITLE: "Give this request a name.",
   INVALID_CATEGORY: "Pick a time-off category.",
   NOT_YOURS: "Only the person who made a request can change it.",
