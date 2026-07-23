@@ -121,11 +121,24 @@ export function BalanceDisparityChart({
           <desc>{summary}</desc>
 
           <defs>
-            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={colorB} stopOpacity="0.28" />
-              <stop offset="50%" stopColor={colorB} stopOpacity="0.28" />
-              <stop offset="50%" stopColor={colorA} stopOpacity="0.28" />
-              <stop offset="100%" stopColor={colorA} stopOpacity="0.28" />
+            {/* userSpaceOnUse + absolute chart coords, so the split lands
+             * exactly on the zero line regardless of the filled area's own
+             * bounding box — the default objectBoundingBox units split at
+             * 50% of the *shape's* extent, which is wrong whenever the data
+             * never crosses zero (the whole fill is one color, but the
+             * default would still paint a spurious band partway through). */}
+            <linearGradient
+              id={gradientId}
+              gradientUnits="userSpaceOnUse"
+              x1="0"
+              y1="0"
+              x2="0"
+              y2={HEIGHT}
+            >
+              <stop offset={0} stopColor={colorB} stopOpacity="0.28" />
+              <stop offset={zeroY / HEIGHT} stopColor={colorB} stopOpacity="0.28" />
+              <stop offset={zeroY / HEIGHT} stopColor={colorA} stopOpacity="0.28" />
+              <stop offset={1} stopColor={colorA} stopOpacity="0.28" />
             </linearGradient>
           </defs>
 
