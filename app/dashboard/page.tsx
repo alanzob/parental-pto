@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardClient } from "@/components/dashboard-client";
+import { ImpactStats } from "@/components/impact-stats";
+import { getPublicStats } from "@/lib/stats";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -18,7 +20,7 @@ export default async function DashboardPage() {
 
   if (!profile?.household_id) redirect("/onboarding");
 
-  const [{ data: household }, { data: profiles }, { data: balances }, { data: requests }] =
+  const [{ data: household }, { data: profiles }, { data: balances }, { data: requests }, stats] =
     await Promise.all([
       supabase
         .from("households")
@@ -39,6 +41,7 @@ export default async function DashboardPage() {
         .eq("household_id", profile.household_id)
         .order("occurred_at", { ascending: false })
         .limit(50),
+      getPublicStats(),
     ]);
 
   const realPartner = (profiles ?? []).find((p) => p.id !== user.id) ?? null;
@@ -50,12 +53,15 @@ export default async function DashboardPage() {
   const me = (profiles ?? []).find((p) => p.id === user.id) ?? profile;
 
   return (
-    <DashboardClient
-      me={me}
-      partner={partner}
-      household={household!}
-      balances={balances ?? []}
-      requests={requests ?? []}
-    />
+    <>
+      <ImpactStats stats={stats} className="mb-6" />
+      <DashboardClient
+        me={me}
+        partner={partner}
+        household={household!}
+        balances={balances ?? []}
+        requests={requests ?? []}
+      />
+    </>
   );
 }
