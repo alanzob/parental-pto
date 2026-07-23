@@ -23,10 +23,19 @@ export function AppLogo({
         className={active ? "text-[#39ff14]" : "text-primary"}
       >
         <rect x="0.5" y="0.5" width="31" height="31" rx="2" stroke="currentColor" />
-        <line x1="5" y1="26" x2="27" y2="26" stroke="currentColor" strokeWidth="1" />
-        <rect x="7" y="16" width="4" height="10" fill="currentColor" />
-        <rect x="14" y="10" width="4" height="16" fill="currentColor" />
-        <rect x="21" y="6" width="4" height="20" fill="currentColor" />
+        <circle cx="15" cy="21" r="6" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="12.7" cy="20" r="0.8" fill="currentColor" />
+        <circle cx="17.3" cy="20" r="0.8" fill="currentColor" />
+        <path
+          d="M12.3 23.2 Q15 25.4 17.7 23.2"
+          stroke="currentColor"
+          strokeWidth="1"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <line x1="15" y1="12" x2="15" y2="6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="20" y1="14.5" x2="25" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="10" y1="14.5" x2="7" y2="10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     </button>
   );

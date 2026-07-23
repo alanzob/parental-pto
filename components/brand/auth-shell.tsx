@@ -11,7 +11,7 @@ import { SiteFooter } from "@/components/site-footer";
 const RULER_TICKS = [0, 25, 50, 75, 100];
 
 export function AuthShell({
-  spec = ["Rev 1.0", "My time off, tracked", "Two who trade off"],
+  spec = ["Rev 1.0"],
   children,
 }: {
   spec?: string[];
@@ -52,12 +52,9 @@ export function AuthShell({
                   {line}
                 </p>
               ))}
+              <p className="font-heading text-sm italic">My Time Off</p>
             </div>
           </div>
-
-          <p className="text-muted-foreground hidden font-mono text-[10px] tracking-wide md:block">
-            $0/mo · Vercel + Supabase
-          </p>
         </aside>
 
         <main className="flex flex-1 items-center justify-center px-6 py-10">
