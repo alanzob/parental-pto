@@ -22,7 +22,7 @@ export function DemoSeriesControls() {
       const futureRemaining = items.filter(
         (i) =>
           (i.status === "pending" || i.status === "approved") &&
-          new Date(i.offDutyStart).getTime() > now,
+          new Date(i.date).getTime() > now,
       ).length;
       return {
         seriesId,

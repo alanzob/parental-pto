@@ -3,21 +3,22 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { generateInviteCode } from "@/lib/invite-code";
-import { computeDuration } from "@/lib/duration";
+import { OFF_CATEGORIES, categoryLabel, categoryWindow, formatPoints, DEFAULT_WEIGHTS, type OffCategory } from "@/lib/pto/categories";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 type Phase = "setup" | "history";
-type LoggedEntry = { title: string; fullDays: number; hours: number };
+type LoggedEntry = { title: string; category: OffCategory };
 
 const ERROR_MESSAGES: Record<string, string> = {
   ALREADY_IN_HOUSEHOLD: "You already belong to a household.",
   ALREADY_HAS_PARTNER: "This household already has a second member.",
   INVALID_NAME: "Give your partner a name.",
   INVALID_TITLE: "Give this entry a name.",
-  INVALID_WINDOW: "Back on duty must be after off duty starting.",
+  INVALID_CATEGORY: "Pick a time-off category.",
 };
 
 function friendlyError(message: string): string {
@@ -25,11 +26,9 @@ function friendlyError(message: string): string {
   return ERROR_MESSAGES[code] ?? message;
 }
 
-function toLocalDatetimeInput(date: Date): string {
+function toDateInput(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours(),
-  )}:${pad(date.getMinutes())}`;
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 export function QuickStartFlow() {
@@ -45,12 +44,8 @@ export function QuickStartFlow() {
   const [origin, setOrigin] = useState("");
 
   const [title, setTitle] = useState("");
-  const [offDutyStart, setOffDutyStart] = useState(() => toLocalDatetimeInput(new Date()));
-  const [backOnDuty, setBackOnDuty] = useState(() => {
-    const d = new Date();
-    d.setHours(d.getHours() + 4);
-    return toLocalDatetimeInput(d);
-  });
+  const [date, setDate] = useState(() => toDateInput(new Date()));
+  const [category, setCategory] = useState<OffCategory>("evening");
   const [addingEntry, setAddingEntry] = useState(false);
   const [logged, setLogged] = useState<LoggedEntry[]>([]);
 
@@ -108,20 +103,21 @@ export function QuickStartFlow() {
 
   async function addEntry(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim() || backOnDuty <= offDutyStart) return;
+    if (!title.trim() || !date) return;
     setAddingEntry(true);
+    const { start, end } = categoryWindow(date, category);
     const { error } = await supabase.rpc("create_pto_request", {
       p_title: title.trim(),
-      p_off_duty_start: new Date(offDutyStart).toISOString(),
-      p_back_on_duty: new Date(backOnDuty).toISOString(),
+      p_off_duty_start: start.toISOString(),
+      p_back_on_duty: end.toISOString(),
+      p_category: category,
     });
     setAddingEntry(false);
     if (error) {
       toast.error(friendlyError(error.message));
       return;
     }
-    const { fullDays, hours } = computeDuration(offDutyStart, backOnDuty);
-    setLogged((prev) => [...prev, { title: title.trim(), fullDays, hours }]);
+    setLogged((prev) => [...prev, { title: title.trim(), category }]);
     setTitle("");
   }
 
@@ -202,21 +198,29 @@ export function QuickStartFlow() {
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Trip to Cali"
+            placeholder="e.g. Dinner with friends"
           />
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Date" />
           <div className="grid grid-cols-2 gap-2">
-            <Input
-              type="datetime-local"
-              value={offDutyStart}
-              onChange={(e) => setOffDutyStart(e.target.value)}
-              aria-label="Off duty starting"
-            />
-            <Input
-              type="datetime-local"
-              value={backOnDuty}
-              onChange={(e) => setBackOnDuty(e.target.value)}
-              aria-label="Back on duty"
-            />
+            {OFF_CATEGORIES.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setCategory(c.value)}
+                aria-pressed={category === c.value}
+                className={cn(
+                  "border-border flex items-center justify-between rounded-sm border px-2.5 py-1.5 text-xs transition-colors",
+                  category === c.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "hover:bg-muted",
+                )}
+              >
+                <span>{c.label}</span>
+                <span className="font-mono tabular-nums opacity-80">
+                  {formatPoints(DEFAULT_WEIGHTS[c.value])}
+                </span>
+              </button>
+            ))}
           </div>
           <Button
             type="submit"
@@ -232,8 +236,7 @@ export function QuickStartFlow() {
           <ul className="space-y-1 pt-1 text-sm">
             {logged.map((l, i) => (
               <li key={i} className="text-muted-foreground">
-                ✓ {l.title} — {l.fullDays > 0 ? `${l.fullDays}d ` : ""}
-                {l.hours}h
+                ✓ {l.title} — {categoryLabel(l.category)}
               </li>
             ))}
           </ul>

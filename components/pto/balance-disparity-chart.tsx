@@ -13,11 +13,11 @@ const PAD_BOTTOM = 28;
 
 function fmtHours(h: number): string {
   const rounded = Math.round(h * 10) / 10;
-  return `${rounded > 0 ? "+" : ""}${rounded}H`;
+  return `${rounded > 0 ? "+" : ""}${rounded} pts`;
 }
 
 function fmtAbsHours(h: number): string {
-  return `${Math.round(Math.abs(h) * 10) / 10}H`;
+  return `${Math.round(Math.abs(h) * 10) / 10} pts`;
 }
 
 function fmtAxisDate(d: Date): string {
@@ -45,7 +45,7 @@ export function BalanceDisparityChart({
     if (points.length < 2) return null;
 
     const values = points.map((p) => p.disparity);
-    const domainMax = Math.max(24, ...values.map((v) => Math.abs(v))) * 1.1;
+    const domainMax = Math.max(4, ...values.map((v) => Math.abs(v))) * 1.1;
 
     const t0 = points[0].date.getTime();
     const t1 = points[points.length - 1].date.getTime();
@@ -89,7 +89,7 @@ export function BalanceDisparityChart({
   }
 
   const { domainMax, y, linePath, areaPath, zeroY, last, lastX, lastY, lastColor, t0, t1 } = geometry;
-  const summary = `From ${points[0].date.toLocaleDateString()} to ${last.date.toLocaleDateString()}, the balance disparity moved from even to ${fmtHours(last.disparity)} ${last.disparity >= 0 ? `favoring ${labelB}` : `favoring ${labelA}`}, peaking around ${Math.round(domainMax / 1.1)} hours at its widest.`;
+  const summary = `From ${points[0].date.toLocaleDateString()} to ${last.date.toLocaleDateString()}, the balance disparity moved from even to ${fmtHours(last.disparity)} ${last.disparity >= 0 ? `favoring ${labelB}` : `favoring ${labelA}`}, peaking around ${Math.round(domainMax / 1.1)} points at its widest.`;
 
   return (
     <Card>

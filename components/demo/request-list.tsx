@@ -2,20 +2,15 @@
 
 import { useState } from "react";
 import { useDemo } from "@/components/demo/demo-provider";
-import { DEMO_PEOPLE, formatDuration, type DemoRequest } from "@/lib/demo/types";
+import { DEMO_PEOPLE, weightOf, type DemoRequest } from "@/lib/demo/types";
+import { categoryLabel, formatPoints } from "@/lib/pto/categories";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { NewRequestDialog } from "@/components/demo/new-request-dialog";
 
-function fmt(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export function RequestList() {
@@ -49,8 +44,8 @@ export function RequestList() {
                     )}
                   </p>
                   <p className="text-muted-foreground font-mono text-xs">
-                    {DEMO_PEOPLE[r.requestedBy].name} off duty {fmt(r.offDutyStart)} → back{" "}
-                    {fmt(r.backOnDuty)} · {formatDuration(r.fullDays, r.hours)} banked to{" "}
+                    {DEMO_PEOPLE[r.requestedBy].name} · {categoryLabel(r.category)} ·{" "}
+                    {fmtDate(r.date)} · {formatPoints(weightOf(r.category))} banked to{" "}
                     {DEMO_PEOPLE[r.creditedTo].name}
                   </p>
                 </div>

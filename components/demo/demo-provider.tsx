@@ -2,41 +2,27 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { seedDemoRequests } from "@/lib/demo/seed";
-import {
-  durationToHours,
-  normalizeDuration,
-  otherPerson,
-  type DemoPerson,
-  type DemoRequest,
-} from "@/lib/demo/types";
-import { computeDuration } from "@/lib/demo/types";
+import { otherPerson, weightOf, type DemoPerson, type DemoRequest } from "@/lib/demo/types";
+import { categoryWindow, type OffCategory } from "@/lib/pto/categories";
 import { occurrenceStarts, type Frequency } from "@/lib/pto/recurrence";
 
-// Bump this whenever lib/demo/seed.ts changes shape or story — otherwise
-// anyone who already has v2 data cached in localStorage keeps seeing the
-// old seed forever, since load() only falls back to seedDemoRequests()
-// when the key is completely empty.
-const STORAGE_KEY = "parental-pto-demo-v4";
+// Bump this whenever lib/demo/seed.ts changes shape or story, so cached
+// localStorage data doesn't hide the new seed.
+const STORAGE_KEY = "parental-pto-demo-v5";
 const CLICKS_REQUIRED = 5;
 const CLICK_WINDOW_MS = 2500;
 
-type Balance = { fullDays: number; hours: number };
+type NewRequestInput = { title: string; date: string; category: OffCategory };
 
 type DemoContextValue = {
   persona: DemoPerson;
   setPersona: (p: DemoPerson) => void;
   requests: DemoRequest[];
-  balanceFor: (p: DemoPerson) => Balance;
-  submitRequest: (input: { title: string; offDutyStart: string; backOnDuty: string }) => void;
-  submitRecurringRequest: (
-    input: { title: string; offDutyStart: string; backOnDuty: string },
-    frequency: Frequency,
-    endsBy: string,
-  ) => void;
-  editRequest: (
-    id: string,
-    input: { title: string; offDutyStart: string; backOnDuty: string },
-  ) => void;
+  /** Points banked to this person from approved requests credited to them. */
+  balanceFor: (p: DemoPerson) => number;
+  submitRequest: (input: NewRequestInput) => void;
+  submitRecurringRequest: (input: NewRequestInput, frequency: Frequency, endsBy: string) => void;
+  editRequest: (id: string, input: NewRequestInput) => void;
   cancelRequest: (id: string) => void;
   respondSeries: (seriesId: string, approve: boolean) => void;
   cancelSeries: (seriesId: string) => void;
@@ -49,6 +35,10 @@ type DemoContextValue = {
 };
 
 const DemoContext = createContext<DemoContextValue | null>(null);
+
+function isoFor(date: string, category: OffCategory): string {
+  return categoryWindow(date, category).start.toISOString();
+}
 
 function load(): DemoRequest[] {
   if (typeof window === "undefined") return seedDemoRequests();
@@ -70,9 +60,6 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   const clickTimestamps = useRef<number[]>([]);
 
   useEffect(() => {
-    // Reading localStorage can't happen during SSR/first render without a
-    // hydration mismatch (server has no window), so this genuinely needs
-    // to run post-mount rather than as a lazy useState initializer.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRequests(load());
     setHydrated(true);
@@ -88,22 +75,18 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   }, [retroChudActive]);
 
   const rawBalanceFor = useCallback(
-    (p: DemoPerson) => {
-      const totalHours = requests
+    (p: DemoPerson) =>
+      requests
         .filter((r) => r.status === "approved" && r.creditedTo === p)
-        .reduce((sum, r) => sum + durationToHours(r.fullDays, r.hours), 0);
-      return normalizeDuration(totalHours);
-    },
+        .reduce((sum, r) => sum + weightOf(r.category), 0),
     [requests],
   );
 
   const balanceFor = useCallback(
-    (p: DemoPerson): Balance => {
+    (p: DemoPerson): number => {
       if (retroChudActive && chudBoosted) {
-        if (p === chudBoosted) return { fullDays: 9999, hours: 0 };
-        const raw = rawBalanceFor(p);
-        const decimatedHours = Math.floor(durationToHours(raw.fullDays, raw.hours) * 0.1);
-        return normalizeDuration(decimatedHours);
+        if (p === chudBoosted) return 9999;
+        return Math.floor(rawBalanceFor(p) * 0.1);
       }
       return rawBalanceFor(p);
     },
@@ -111,17 +94,15 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   );
 
   const submitRequest = useCallback(
-    (input: { title: string; offDutyStart: string; backOnDuty: string }) => {
-      const { fullDays, hours } = computeDuration(input.offDutyStart, input.backOnDuty);
+    (input: NewRequestInput) => {
+      const iso = isoFor(input.date, input.category);
       const newRequest: DemoRequest = {
         id: crypto.randomUUID(),
         title: input.title,
         requestedBy: persona,
         creditedTo: otherPerson(persona),
-        offDutyStart: input.offDutyStart,
-        backOnDuty: input.backOnDuty,
-        fullDays,
-        hours,
+        date: iso,
+        category: input.category,
         status: "pending",
         createdAt: new Date().toISOString(),
       };
@@ -131,34 +112,23 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
   );
 
   const submitRecurringRequest = useCallback(
-    (
-      input: { title: string; offDutyStart: string; backOnDuty: string },
-      frequency: Frequency,
-      endsBy: string,
-    ) => {
+    (input: NewRequestInput, frequency: Frequency, endsBy: string) => {
       const seriesId = crypto.randomUUID();
       const creditedTo = otherPerson(persona);
-      const durationMs =
-        new Date(input.backOnDuty).getTime() - new Date(input.offDutyStart).getTime();
-      const starts = occurrenceStarts(new Date(input.offDutyStart), new Date(endsBy), frequency);
+      const firstStart = categoryWindow(input.date, input.category).start;
+      const starts = occurrenceStarts(firstStart, new Date(endsBy), frequency);
       const createdAt = new Date().toISOString();
-      const instances: DemoRequest[] = starts.map((off) => {
-        const back = new Date(off.getTime() + durationMs);
-        const { fullDays, hours } = computeDuration(off, back);
-        return {
-          id: crypto.randomUUID(),
-          title: input.title,
-          requestedBy: persona,
-          creditedTo,
-          offDutyStart: off.toISOString(),
-          backOnDuty: back.toISOString(),
-          fullDays,
-          hours,
-          status: "pending",
-          seriesId,
-          createdAt,
-        };
-      });
+      const instances: DemoRequest[] = starts.map((off) => ({
+        id: crypto.randomUUID(),
+        title: input.title,
+        requestedBy: persona,
+        creditedTo,
+        date: off.toISOString(),
+        category: input.category,
+        status: "pending",
+        seriesId,
+        createdAt,
+      }));
       setRequests((prev) => [...instances, ...prev]);
     },
     [persona],
@@ -180,7 +150,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
       prev.map((r) =>
         r.seriesId === seriesId &&
         (r.status === "pending" || r.status === "approved") &&
-        new Date(r.offDutyStart).getTime() > now
+        new Date(r.date).getTime() > now
           ? { ...r, status: "cancelled" as const }
           : r,
       ),
@@ -191,46 +161,33 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     const now = Date.now();
     const shift = days * 24 * 60 * 60 * 1000;
     setRequests((prev) =>
-      prev.map((r) => {
-        if (
-          r.seriesId === seriesId &&
-          (r.status === "pending" || r.status === "approved") &&
-          new Date(r.offDutyStart).getTime() > now
-        ) {
-          return {
-            ...r,
-            offDutyStart: new Date(new Date(r.offDutyStart).getTime() + shift).toISOString(),
-            backOnDuty: new Date(new Date(r.backOnDuty).getTime() + shift).toISOString(),
-          };
-        }
-        return r;
-      }),
+      prev.map((r) =>
+        r.seriesId === seriesId &&
+        (r.status === "pending" || r.status === "approved") &&
+        new Date(r.date).getTime() > now
+          ? { ...r, date: new Date(new Date(r.date).getTime() + shift).toISOString() }
+          : r,
+      ),
     );
   }, []);
 
-  const editRequest = useCallback(
-    (id: string, input: { title: string; offDutyStart: string; backOnDuty: string }) => {
-      const { fullDays, hours } = computeDuration(input.offDutyStart, input.backOnDuty);
-      setRequests((prev) =>
-        prev.map((r) =>
-          r.id === id
-            ? {
-                ...r,
-                title: input.title,
-                offDutyStart: input.offDutyStart,
-                backOnDuty: input.backOnDuty,
-                fullDays,
-                hours,
-                // Re-approve on edit: an approved request drops back to
-                // pending so the partner signs off on the new timing.
-                status: r.status === "approved" ? ("pending" as const) : r.status,
-              }
-            : r,
-        ),
-      );
-    },
-    [],
-  );
+  const editRequest = useCallback((id: string, input: NewRequestInput) => {
+    const iso = isoFor(input.date, input.category);
+    setRequests((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              title: input.title,
+              date: iso,
+              category: input.category,
+              // Re-approve on edit: an approved request drops back to pending.
+              status: r.status === "approved" ? ("pending" as const) : r.status,
+            }
+          : r,
+      ),
+    );
+  }, []);
 
   const cancelRequest = useCallback((id: string) => {
     setRequests((prev) =>

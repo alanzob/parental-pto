@@ -1,18 +1,13 @@
 import type { PtoTransaction } from "@/lib/types";
-import { formatDuration } from "@/lib/duration";
+import { categoryLabel, formatPoints, type OffCategory } from "@/lib/pto/categories";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 type PersonRef = { id: string | null; display_name: string | null };
 
-function fmt(date: Date): string {
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+function fmtDate(date: Date): string {
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export function RequestsList({
@@ -50,9 +45,7 @@ export function RequestsList({
     <Card>
       <CardContent className="divide-y p-0">
         {requests.map((r) => {
-          const start = new Date(r.occurred_at);
-          const end = new Date(start.getTime() + r.base_hours * 60 * 60 * 1000);
-          const duration = formatDuration(Math.floor(r.base_hours / 24), r.base_hours % 24);
+          const cat = r.category ? categoryLabel(r.category as OffCategory) : "Time off";
           const canRespond = r.status === "pending" && r.user_id === me.id;
           const canManage =
             (r.status === "pending" || r.status === "approved") && r.initiated_by === me.id;
@@ -71,10 +64,8 @@ export function RequestsList({
                   )}
                 </p>
                 <p className="text-muted-foreground font-mono text-xs">
-                  {nameFor(r.initiated_by)} off duty {fmt(start)} → back {fmt(end)} ·{" "}
-                  {duration}
-                  {r.multiplier !== 1 && ` · ${r.multiplier}x peak`} · banked to{" "}
-                  {nameFor(r.user_id)}
+                  {nameFor(r.initiated_by)} · {cat} · {fmtDate(new Date(r.occurred_at))} ·{" "}
+                  {formatPoints(r.final_cost)} banked to {nameFor(r.user_id)}
                   {r.note && ` · ${r.note}`}
                 </p>
               </div>

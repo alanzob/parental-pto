@@ -13,13 +13,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDemo } from "@/components/demo/demo-provider";
+import { DEMO_PEOPLE, otherPerson, type DemoRequest } from "@/lib/demo/types";
 import {
-  DEMO_PEOPLE,
-  computeDuration,
-  formatDuration,
-  otherPerson,
-  type DemoRequest,
-} from "@/lib/demo/types";
+  OFF_CATEGORIES,
+  DEFAULT_WEIGHTS,
+  categoryWindow,
+  formatPoints,
+  type OffCategory,
+} from "@/lib/pto/categories";
 import { occurrenceStarts, type Frequency } from "@/lib/pto/recurrence";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -31,16 +32,10 @@ const FREQUENCIES: { value: Frequency; label: string }[] = [
   { value: "monthly", label: "Monthly" },
 ];
 
-function toLocalDatetimeInput(date: Date): string {
+function toDateInput(iso: string | Date): string {
+  const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours(),
-  )}:${pad(date.getMinutes())}`;
-}
-
-function toDateInput(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export function NewRequestDialog({
@@ -56,15 +51,8 @@ export function NewRequestDialog({
   const isEdit = !!editing;
 
   const [title, setTitle] = useState(editing?.title ?? "");
-  const [offDutyStart, setOffDutyStart] = useState(() =>
-    toLocalDatetimeInput(editing ? new Date(editing.offDutyStart) : new Date()),
-  );
-  const [backOnDuty, setBackOnDuty] = useState(() => {
-    if (editing) return toLocalDatetimeInput(new Date(editing.backOnDuty));
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return toLocalDatetimeInput(d);
-  });
+  const [date, setDate] = useState(editing ? toDateInput(editing.date) : toDateInput(new Date()));
+  const [category, setCategory] = useState<OffCategory>(editing?.category ?? "evening");
   const [frequency, setFrequency] = useState<Frequency>("none");
   const [endsBy, setEndsBy] = useState(() => {
     const d = new Date();
@@ -72,34 +60,29 @@ export function NewRequestDialog({
     return toDateInput(d);
   });
 
-  const preview = computeDuration(offDutyStart, backOnDuty);
-  const valid = title.trim().length > 0 && backOnDuty > offDutyStart;
+  const valid = title.trim().length > 0 && !!date;
   const wasApproved = editing?.status === "approved";
+  const partnerName = DEMO_PEOPLE[otherPerson(persona)].name;
 
   const occurrenceCount = useMemo(() => {
     if (frequency === "none" || !valid) return 1;
-    return occurrenceStarts(new Date(offDutyStart), new Date(endsBy), frequency).length;
-  }, [frequency, endsBy, offDutyStart, valid]);
+    return occurrenceStarts(categoryWindow(date, category).start, new Date(endsBy), frequency).length;
+  }, [frequency, endsBy, date, category, valid]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
+    const input = { title: title.trim(), date, category };
     if (isEdit && editing) {
-      editRequest(editing.id, { title: title.trim(), offDutyStart, backOnDuty });
-      toast.success(
-        wasApproved
-          ? `Updated — sent back to ${DEMO_PEOPLE[otherPerson(persona)].name} for re-approval.`
-          : "Request updated.",
-      );
+      editRequest(editing.id, input);
+      toast.success(wasApproved ? `Updated — sent back to ${partnerName} for re-approval.` : "Request updated.");
     } else if (frequency !== "none") {
-      submitRecurringRequest({ title: title.trim(), offDutyStart, backOnDuty }, frequency, endsBy);
-      toast.success(
-        `${occurrenceCount} requests sent to ${DEMO_PEOPLE[otherPerson(persona)].name} for approval.`,
-      );
+      submitRecurringRequest(input, frequency, endsBy);
+      toast.success(`${occurrenceCount} requests sent to ${partnerName} for approval.`);
       setTitle("");
     } else {
-      submitRequest({ title: title.trim(), offDutyStart, backOnDuty });
-      toast.success(`Sent to ${DEMO_PEOPLE[otherPerson(persona)].name} for approval.`);
+      submitRequest(input);
+      toast.success(`Sent to ${partnerName} for approval.`);
       setTitle("");
     }
     onOpenChange(false);
@@ -111,9 +94,7 @@ export function NewRequestDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit request" : "Request time off"}</DialogTitle>
           <DialogDescription>
-            {isEdit
-              ? "Adjust the timing or name of this request."
-              : "Like a car rental: when do you go off duty, and when are you back?"}
+            {isEdit ? "Adjust the date or category." : "Pick a date and what kind of time off it is."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -123,48 +104,49 @@ export function NewRequestDialog({
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Trip to Cali"
+              placeholder="e.g. Dinner with friends"
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="off-duty">Off duty starting</Label>
-              <Input
-                id="off-duty"
-                type="datetime-local"
-                value={offDutyStart}
-                onChange={(e) => setOffDutyStart(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="back-on-duty">Back on duty</Label>
-              <Input
-                id="back-on-duty"
-                type="datetime-local"
-                value={backOnDuty}
-                onChange={(e) => setBackOnDuty(e.target.value)}
-                required
-              />
+
+          <div className="space-y-1.5">
+            <Label htmlFor="date">Date</Label>
+            <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Category</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {OFF_CATEGORIES.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setCategory(c.value)}
+                  aria-pressed={category === c.value}
+                  className={cn(
+                    "border-border flex items-center justify-between rounded-sm border px-3 py-2 text-sm transition-colors",
+                    category === c.value
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "hover:bg-muted",
+                  )}
+                >
+                  <span>{c.label}</span>
+                  <span className="font-mono text-xs tabular-nums opacity-80">
+                    {formatPoints(DEFAULT_WEIGHTS[c.value])}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
-          {valid && (
-            <p className="bg-muted rounded-md p-2 text-sm">
-              {formatDuration(preview.fullDays, preview.hours)} — banked to{" "}
-              {DEMO_PEOPLE[otherPerson(persona)].name}{" "}
-              {isEdit ? "when re-approved" : "once approved"}.
-            </p>
-          )}
-          {!valid && backOnDuty && backOnDuty <= offDutyStart && (
-            <p className="text-destructive text-sm">
-              &quot;Back on duty&quot; must be after &quot;Off duty starting&quot;.
-            </p>
-          )}
+
+          <p className="bg-muted rounded-md p-2 text-sm">
+            {formatPoints(DEFAULT_WEIGHTS[category])} banked to {partnerName}{" "}
+            {isEdit ? "when re-approved" : "once approved"}.
+          </p>
+
           {isEdit && wasApproved && (
             <p className="border-warning bg-warning/10 text-warning rounded-md border p-2 text-sm">
-              This request is already approved. Saving sends it back to{" "}
-              {DEMO_PEOPLE[otherPerson(persona)].name} for re-approval.
+              This request is already approved. Saving sends it back to {partnerName} for re-approval.
             </p>
           )}
 

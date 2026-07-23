@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useDemo } from "@/components/demo/demo-provider";
-import { DEMO_PEOPLE, durationToHours } from "@/lib/demo/types";
+import { DEMO_PEOPLE, weightOf } from "@/lib/demo/types";
 import { computeDisparitySeries, type DisparityEvent } from "@/lib/pto/disparity";
 import { BalanceDisparityChart } from "@/components/pto/balance-disparity-chart";
 
@@ -13,8 +13,8 @@ export function DisparityChart() {
     const events: DisparityEvent[] = requests
       .filter((r) => r.status === "approved")
       .map((r) => ({
-        date: new Date(r.offDutyStart),
-        hours: durationToHours(r.fullDays, r.hours),
+        date: new Date(r.date),
+        hours: weightOf(r.category),
         favorsB: r.creditedTo === "vanda",
       }));
     return computeDisparitySeries(events);

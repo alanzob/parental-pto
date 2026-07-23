@@ -13,8 +13,8 @@ export function CalendarHeatmap() {
       requests
         .filter((r) => r.status === "approved")
         .map((r) => ({
-          start: new Date(r.offDutyStart),
-          end: new Date(r.backOnDuty),
+          date: new Date(r.date),
+          category: r.category,
           person: r.requestedBy === "brian" ? "a" : "b",
         })),
     [requests],

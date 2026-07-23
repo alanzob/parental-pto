@@ -1,7 +1,8 @@
 "use client";
 
 import { useDemo } from "@/components/demo/demo-provider";
-import { DEMO_PEOPLE, formatDuration, type DemoPerson } from "@/lib/demo/types";
+import { DEMO_PEOPLE, type DemoPerson } from "@/lib/demo/types";
+import { formatPoints } from "@/lib/pto/categories";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -12,8 +13,8 @@ export function BalanceCards() {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {people.map((p) => {
-        const { fullDays, hours } = balanceFor(p);
-        const isInfinite = retroChudActive && fullDays >= 9999;
+        const points = balanceFor(p);
+        const isInfinite = retroChudActive && points >= 9999;
         return (
           <Card key={p} className={cn(p === persona && "ring-primary ring-2")}>
             <CardHeader>
@@ -26,10 +27,10 @@ export function BalanceCards() {
             </CardHeader>
             <CardContent>
               <p className="font-mono text-2xl font-semibold tabular-nums">
-                {isInfinite ? "∞" : `${fullDays}d ${hours}h`}
+                {isInfinite ? "∞" : formatPoints(points)}
               </p>
               <p className="text-muted-foreground font-mono text-sm">
-                {isInfinite ? "UNLIMITED ME-TIME" : formatDuration(fullDays, hours)} banked
+                {isInfinite ? "UNLIMITED ME-TIME" : "banked"}
               </p>
             </CardContent>
           </Card>

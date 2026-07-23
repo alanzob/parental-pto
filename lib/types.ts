@@ -8,6 +8,10 @@ export type Household = {
   peak_multiplier: number;
   peak_window_start: string;
   peak_window_end: string;
+  category_weight_day: number;
+  category_weight_morning: number;
+  category_weight_afternoon: number;
+  category_weight_evening: number;
   calendar_feed_token: string;
   /** 'manual' = a partner is being tracked without them actually using the
    * app — see manual_partner_name. Requests auto-approve in this mode since
@@ -60,8 +64,11 @@ export type PtoTransaction = {
   initiated_by: string;
   transaction_type: "request";
   title: string;
+  /** null on legacy pre-0008 rows; every new request has one. */
+  category: import("@/lib/pto/categories").OffCategory | null;
   base_hours: number;
   multiplier: number;
+  /** The credited amount, now in points (the category weight). */
   final_cost: number;
   status: "pending" | "approved" | "denied" | "cancelled";
   note: string | null;

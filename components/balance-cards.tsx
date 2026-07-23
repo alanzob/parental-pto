@@ -1,12 +1,11 @@
-import { formatCompactDuration, normalizeDuration } from "@/lib/duration";
+import { formatPoints } from "@/lib/pto/categories";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 type PersonRef = { id: string | null; display_name: string | null };
 
-function signedDuration(hours: number): string {
-  const { fullDays, hours: rem } = normalizeDuration(Math.abs(hours));
-  return `${hours < 0 ? "-" : ""}${formatCompactDuration(fullDays, rem)}`;
+function signedPoints(points: number): string {
+  return `${points < 0 ? "-" : ""}${formatPoints(Math.abs(points))}`;
 }
 
 export function BalanceCards({
@@ -29,7 +28,7 @@ export function BalanceCards({
         </CardHeader>
         <CardContent>
           <p className="font-mono text-2xl font-semibold tabular-nums">
-            {signedDuration(myBalance)}
+            {signedPoints(myBalance)}
           </p>
           <p className="text-muted-foreground font-mono text-sm">banked</p>
         </CardContent>
@@ -40,7 +39,7 @@ export function BalanceCards({
         </CardHeader>
         <CardContent>
           <p className="font-mono text-2xl font-semibold tabular-nums">
-            {partner ? signedDuration(partnerBalance) : "—"}
+            {partner ? signedPoints(partnerBalance) : "—"}
           </p>
           <p className="text-muted-foreground font-mono text-sm">
             {partner ? "banked" : "invite them from Settings"}

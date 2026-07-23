@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import { useDemo } from "@/components/demo/demo-provider";
-import { DEMO_PEOPLE, durationToHours, type DemoPerson } from "@/lib/demo/types";
+import { DEMO_PEOPLE, weightOf, type DemoPerson } from "@/lib/demo/types";
+import { formatPoints } from "@/lib/pto/categories";
 import { ComparativeStats, type StatRow } from "@/components/pto/comparative-stats";
 
 export function StatsPanel() {
@@ -23,32 +24,25 @@ export function StatsPanel() {
     const pendingByCreditedTo = countBy("pending", "creditedTo");
     const deniedTotal = countBy("denied", "requestedBy");
 
-    const totalHoursOff = Object.fromEntries(
+    const pointsOff = Object.fromEntries(
       people.map((p) => [
         p,
         requests
           .filter((r) => r.requestedBy === p && r.status === "approved")
-          .reduce((sum, r) => sum + durationToHours(r.fullDays, r.hours), 0),
+          .reduce((sum, r) => sum + weightOf(r.category), 0),
       ]),
-    ) as Record<DemoPerson, number>;
-
-    const balances = Object.fromEntries(
-      people.map((p) => {
-        const b = balanceFor(p);
-        return [p, durationToHours(b.fullDays, b.hours)];
-      }),
     ) as Record<DemoPerson, number>;
 
     return [
       {
-        label: "TIME OFF DUTY (APPROVED)",
-        a: `${totalHoursOff.brian}H`,
-        b: `${totalHoursOff.vanda}H`,
+        label: "TIME OFF TAKEN (APPROVED)",
+        a: formatPoints(pointsOff.brian),
+        b: formatPoints(pointsOff.vanda),
       },
       {
         label: "CURRENT BANK BALANCE",
-        a: `${balances.brian}H`,
-        b: `${balances.vanda}H`,
+        a: formatPoints(balanceFor("brian")),
+        b: formatPoints(balanceFor("vanda")),
       },
       {
         label: "REQUESTS APPROVED",
@@ -69,10 +63,8 @@ export function StatsPanel() {
   }, [requests, balanceFor]);
 
   const footer = useMemo(() => {
-    const b = balanceFor("brian");
-    const v = balanceFor("vanda");
-    const diff = durationToHours(v.fullDays, v.hours) - durationToHours(b.fullDays, b.hours);
-    return `Δ ${Math.abs(diff)}H ${diff >= 0 ? "favoring Vanda" : "favoring Brian"}`;
+    const diff = balanceFor("vanda") - balanceFor("brian");
+    return `Δ ${formatPoints(Math.abs(diff))} ${diff >= 0 ? "favoring Vanda" : "favoring Brian"}`;
   }, [balanceFor]);
 
   return (

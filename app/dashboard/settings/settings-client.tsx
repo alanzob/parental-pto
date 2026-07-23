@@ -42,10 +42,10 @@ export function SettingsClient({
   const [form, setForm] = useState({
     name: household.name,
     timezone: household.timezone,
-    overdraft_floor: String(household.overdraft_floor),
-    peak_multiplier: String(household.peak_multiplier),
-    peak_window_start: household.peak_window_start.slice(0, 5),
-    peak_window_end: household.peak_window_end.slice(0, 5),
+    weight_day: String(household.category_weight_day),
+    weight_morning: String(household.category_weight_morning),
+    weight_afternoon: String(household.category_weight_afternoon),
+    weight_evening: String(household.category_weight_evening),
     use_it_or_lose_it_enabled: household.use_it_or_lose_it_enabled,
     use_it_or_lose_it_days: household.use_it_or_lose_it_days
       ? String(household.use_it_or_lose_it_days)
@@ -89,10 +89,10 @@ export function SettingsClient({
       .update({
         name: form.name,
         timezone: form.timezone,
-        overdraft_floor: parseFloat(form.overdraft_floor) || 0,
-        peak_multiplier: parseFloat(form.peak_multiplier) || 1,
-        peak_window_start: form.peak_window_start,
-        peak_window_end: form.peak_window_end,
+        category_weight_day: parseFloat(form.weight_day) || 0,
+        category_weight_morning: parseFloat(form.weight_morning) || 0,
+        category_weight_afternoon: parseFloat(form.weight_afternoon) || 0,
+        category_weight_evening: parseFloat(form.weight_evening) || 0,
         use_it_or_lose_it_enabled: form.use_it_or_lose_it_enabled,
         use_it_or_lose_it_days: form.use_it_or_lose_it_enabled
           ? parseInt(form.use_it_or_lose_it_days) || null
@@ -254,67 +254,61 @@ export function SettingsClient({
                 placeholder="America/New_York"
               />
               <p className="text-muted-foreground text-xs">
-                Used to resolve the peak window below — e.g.
-                &quot;America/New_York&quot; or &quot;Europe/London&quot;.
+                Used on your calendar feed — e.g. &quot;America/New_York&quot; or
+                &quot;Europe/London&quot;.
+              </p>
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Category weights (points)</Label>
+              <p className="text-muted-foreground text-xs">
+                How many points each kind of time off banks. A day off is worth more than a single
+                part of the day — tune these to whatever feels fair for the two of you.
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="multiplier">Peak-hour multiplier</Label>
+              <Label htmlFor="w-day">Day off</Label>
               <Input
-                id="multiplier"
+                id="w-day"
                 type="number"
-                step="0.1"
-                value={form.peak_multiplier}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, peak_multiplier: e.target.value }))
-                }
+                step="0.5"
+                min="0"
+                value={form.weight_day}
+                onChange={(e) => setForm((f) => ({ ...f, weight_day: e.target.value }))}
               />
-              <p className="text-muted-foreground text-xs">
-                E.g. 1.5 means a request starting in the peak window below
-                credits 1.5x the hours (a &quot;premium&quot; for asking
-                during the harder overnight/bedtime stretch).
-              </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="overdraft">Overdraft floor (hours)</Label>
+              <Label htmlFor="w-morning">Morning off</Label>
               <Input
-                id="overdraft"
+                id="w-morning"
                 type="number"
-                value={form.overdraft_floor}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, overdraft_floor: e.target.value }))
-                }
-              />
-              <p className="text-muted-foreground text-xs">
-                Currently unused by the request-approval flow — reserved for
-                a future spend/redeem feature.
-              </p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="peak-start">Peak window start</Label>
-              <Input
-                id="peak-start"
-                type="time"
-                value={form.peak_window_start}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, peak_window_start: e.target.value }))
-                }
+                step="0.5"
+                min="0"
+                value={form.weight_morning}
+                onChange={(e) => setForm((f) => ({ ...f, weight_morning: e.target.value }))}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="peak-end">Peak window end</Label>
+              <Label htmlFor="w-afternoon">Afternoon off</Label>
               <Input
-                id="peak-end"
-                type="time"
-                value={form.peak_window_end}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, peak_window_end: e.target.value }))
-                }
+                id="w-afternoon"
+                type="number"
+                step="0.5"
+                min="0"
+                value={form.weight_afternoon}
+                onChange={(e) => setForm((f) => ({ ...f, weight_afternoon: e.target.value }))}
               />
-              <p className="text-muted-foreground text-xs">
-                A request &quot;off duty starting&quot; inside this window
-                (e.g. bedtime) gets the multiplier above.
-              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="w-evening">Evening off</Label>
+              <Input
+                id="w-evening"
+                type="number"
+                step="0.5"
+                min="0"
+                value={form.weight_evening}
+                onChange={(e) => setForm((f) => ({ ...f, weight_evening: e.target.value }))}
+              />
             </div>
 
             <Separator className="sm:col-span-2" />

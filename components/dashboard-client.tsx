@@ -14,6 +14,7 @@ import { BalanceDisparityChart } from "@/components/pto/balance-disparity-chart"
 import { SeriesControls, type SeriesSummary } from "@/components/pto/series-controls";
 import { computeDisparitySeries, type DisparityEvent } from "@/lib/pto/disparity";
 import type { Frequency } from "@/lib/pto/recurrence";
+import { formatPoints, type OffCategory } from "@/lib/pto/categories";
 import { CalendarFeedCallout } from "@/components/calendar-feed-callout";
 import { ResearchNotesWidget } from "@/components/pto/research-notes-widget";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -55,16 +56,12 @@ export function DashboardClient({
   const calendarEntries = useMemo<HeatmapEntry[]>(() => {
     if (!partner) return [];
     return requests
-      .filter((r) => r.status === "approved")
-      .map((r) => {
-        const start = new Date(r.occurred_at);
-        const end = new Date(start.getTime() + r.base_hours * 60 * 60 * 1000);
-        return {
-          start,
-          end,
-          person: r.initiated_by === me.id ? ("a" as const) : ("b" as const),
-        };
-      });
+      .filter((r) => r.status === "approved" && r.category)
+      .map((r) => ({
+        date: new Date(r.occurred_at),
+        category: r.category as OffCategory,
+        person: r.initiated_by === me.id ? ("a" as const) : ("b" as const),
+      }));
   }, [requests, me.id, partner]);
 
   const statsRows = useMemo<StatRow[]>(() => {
@@ -72,21 +69,21 @@ export function DashboardClient({
     const countBy = (userId: string | null, field: "initiated_by" | "user_id", status: string) =>
       requests.filter((r) => r[field] === userId && r.status === status).length;
 
-    const hoursOffFor = (userId: string | null) =>
+    const pointsOffFor = (userId: string | null) =>
       requests
         .filter((r) => r.initiated_by === userId && r.status === "approved")
-        .reduce((sum, r) => sum + r.base_hours, 0);
+        .reduce((sum, r) => sum + r.final_cost, 0);
 
     return [
       {
-        label: "TIME OFF DUTY (APPROVED)",
-        a: `${hoursOffFor(me.id).toFixed(1)}H`,
-        b: `${hoursOffFor(partner.id).toFixed(1)}H`,
+        label: "TIME OFF TAKEN (APPROVED)",
+        a: formatPoints(pointsOffFor(me.id)),
+        b: formatPoints(pointsOffFor(partner.id)),
       },
       {
         label: "CURRENT BANK BALANCE",
-        a: `${myBalance.toFixed(1)}H`,
-        b: `${partnerBalance.toFixed(1)}H`,
+        a: formatPoints(myBalance),
+        b: formatPoints(partnerBalance),
       },
       {
         label: "REQUESTS APPROVED",
@@ -148,7 +145,7 @@ export function DashboardClient({
   }, [requests, me.id]);
 
   const statsFooter = partner
-    ? `Δ ${Math.abs(partnerBalance - myBalance).toFixed(1)}H ${
+    ? `Δ ${formatPoints(Math.abs(partnerBalance - myBalance))} ${
         partnerBalance - myBalance >= 0
           ? `favoring ${partner.display_name ?? "partner"}`
           : "favoring you"
@@ -159,6 +156,7 @@ export function DashboardClient({
     title: string;
     offDutyStart: string;
     backOnDuty: string;
+    category: OffCategory;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
@@ -168,6 +166,7 @@ export function DashboardClient({
         p_title: input.title,
         p_first_off_duty_start: input.offDutyStart,
         p_first_back_on_duty: input.backOnDuty,
+        p_category: input.category,
         p_frequency: input.frequency,
         p_ends_by: new Date(`${input.endsBy}T23:59:59`).toISOString(),
         p_note: input.note || null,
@@ -190,6 +189,7 @@ export function DashboardClient({
       p_title: input.title,
       p_off_duty_start: input.offDutyStart,
       p_back_on_duty: input.backOnDuty,
+      p_category: input.category,
       p_note: input.note || null,
     });
     if (error) {
@@ -224,6 +224,7 @@ export function DashboardClient({
     title: string;
     offDutyStart: string;
     backOnDuty: string;
+    category: OffCategory;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
@@ -234,6 +235,7 @@ export function DashboardClient({
       p_transaction_id: editing.id,
       p_off_duty_start: input.offDutyStart,
       p_back_on_duty: input.backOnDuty,
+      p_category: input.category,
       p_note: input.note || null,
     });
     if (error) {
@@ -259,7 +261,7 @@ export function DashboardClient({
     }
     toast.success(
       request.status === "approved"
-        ? `Cancelled — ${request.final_cost.toFixed(1)}h credit removed.`
+        ? `Cancelled — ${formatPoints(request.final_cost)} removed.`
         : "Request cancelled.",
     );
     router.refresh();
@@ -445,10 +447,12 @@ export function DashboardClient({
           wasApproved={editing.status === "approved"}
           initial={{
             title: editing.title,
-            offDutyStart: editing.occurred_at,
-            backOnDuty: new Date(
-              new Date(editing.occurred_at).getTime() + editing.base_hours * 60 * 60 * 1000,
-            ).toISOString(),
+            date: (() => {
+              const d = new Date(editing.occurred_at);
+              const pad = (n: number) => String(n).padStart(2, "0");
+              return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            })(),
+            category: (editing.category ?? "evening") as OffCategory,
             note: editing.note ?? "",
           }}
           household={household}
@@ -469,7 +473,7 @@ const RPC_ERROR_MESSAGES: Record<string, string> = {
   ALREADY_RESOLVED: "That request was already handled.",
   NO_PARTNER: "Invite your partner before requesting time off.",
   INVALID_TITLE: "Give this request a name.",
-  INVALID_WINDOW: "Back on duty must be after off duty starting.",
+  INVALID_CATEGORY: "Pick a time-off category.",
   NOT_YOURS: "Only the person who made a request can change it.",
   RESOLVED: "Only pending or approved requests can be edited.",
   ALREADY_CANCELLED: "That request is already cancelled.",

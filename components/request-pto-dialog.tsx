@@ -13,7 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { computeDuration, formatDuration } from "@/lib/duration";
+import {
+  OFF_CATEGORIES,
+  categoryWindow,
+  formatPoints,
+  type CategoryWeights,
+  type OffCategory,
+} from "@/lib/pto/categories";
 import { occurrenceStarts, type Frequency } from "@/lib/pto/recurrence";
 import { cn } from "@/lib/utils";
 import type { Household } from "@/lib/types";
@@ -30,17 +36,19 @@ function toDateInput(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-function toLocalDatetimeInput(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours(),
-  )}:${pad(date.getMinutes())}`;
+export function weightsFromHousehold(h: Household): CategoryWeights {
+  return {
+    day: h.category_weight_day,
+    morning: h.category_weight_morning,
+    afternoon: h.category_weight_afternoon,
+    evening: h.category_weight_evening,
+  };
 }
 
 export type RequestDialogInitial = {
   title: string;
-  offDutyStart: string; // ISO
-  backOnDuty: string; // ISO
+  date: string; // yyyy-mm-dd
+  category: OffCategory;
   note: string;
 };
 
@@ -62,64 +70,48 @@ export function RequestPtoDialog({
     title: string;
     offDutyStart: string;
     backOnDuty: string;
+    category: OffCategory;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
   }) => Promise<boolean>;
   mode?: "create" | "edit";
   initial?: RequestDialogInitial;
-  /** In edit mode: whether the request being edited is currently approved,
-   * so we can warn that saving will send it back for re-approval. */
   wasApproved?: boolean;
 }) {
   const isEdit = mode === "edit";
+  const weights = weightsFromHousehold(household);
 
-  // Remounted via `key` each time it opens (see dashboard-client.tsx), so
-  // these initial values are fresh per open without needing an effect.
   const [title, setTitle] = useState(initial?.title ?? "");
-  const [offDutyStart, setOffDutyStart] = useState(() =>
-    toLocalDatetimeInput(initial ? new Date(initial.offDutyStart) : new Date()),
-  );
-  const [backOnDuty, setBackOnDuty] = useState(() => {
-    if (initial) return toLocalDatetimeInput(new Date(initial.backOnDuty));
-    const d = new Date();
-    d.setHours(d.getHours() + 4);
-    return toLocalDatetimeInput(d);
-  });
+  const [date, setDate] = useState(initial?.date ?? toDateInput(new Date()));
+  const [category, setCategory] = useState<OffCategory>(initial?.category ?? "evening");
   const [note, setNote] = useState(initial?.note ?? "");
   const [frequency, setFrequency] = useState<Frequency>("none");
   const [endsBy, setEndsBy] = useState(() => {
-    const d = new Date(offDutyStart || new Date());
+    const d = new Date(initial?.date ?? new Date());
     d.setMonth(d.getMonth() + 2);
     return toDateInput(d);
   });
   const [submitting, setSubmitting] = useState(false);
 
-  const valid = title.trim().length > 0 && backOnDuty > offDutyStart;
-  const preview = backOnDuty > offDutyStart ? computeDuration(offDutyStart, backOnDuty) : null;
+  const valid = title.trim().length > 0 && !!date;
+  const weight = weights[category];
 
   const occurrenceCount = useMemo(() => {
     if (frequency === "none" || !valid) return 1;
-    return occurrenceStarts(new Date(offDutyStart), new Date(endsBy), frequency).length;
-  }, [frequency, endsBy, offDutyStart, valid]);
-
-  const isPeakPreview = useMemo(() => {
-    const timePart = offDutyStart.split("T")[1];
-    if (!timePart) return false;
-    return (
-      timePart >= household.peak_window_start.slice(0, 5) &&
-      timePart < household.peak_window_end.slice(0, 5)
-    );
-  }, [offDutyStart, household]);
+    return occurrenceStarts(categoryWindow(date, category).start, new Date(endsBy), frequency).length;
+  }, [frequency, endsBy, date, category, valid]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
     setSubmitting(true);
+    const { start, end } = categoryWindow(date, category);
     const ok = await onSubmit({
       title: title.trim(),
-      offDutyStart: new Date(offDutyStart).toISOString(),
-      backOnDuty: new Date(backOnDuty).toISOString(),
+      offDutyStart: start.toISOString(),
+      backOnDuty: end.toISOString(),
+      category,
       note,
       frequency: isEdit ? "none" : frequency,
       endsBy: !isEdit && frequency !== "none" ? endsBy : null,
@@ -135,8 +127,8 @@ export function RequestPtoDialog({
           <DialogTitle>{isEdit ? "Edit request" : "Request time off"}</DialogTitle>
           <DialogDescription>
             {isEdit
-              ? "Adjust the timing or note for this request."
-              : `Like a car rental: when do you go off duty, and when are you back? ${partnerName} banks the equivalent credit once they approve.`}
+              ? "Adjust the date or category for this request."
+              : `Pick a date and what kind of time off it is. ${partnerName} banks the points once they approve.`}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -146,52 +138,49 @@ export function RequestPtoDialog({
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Trip to Cali"
+              placeholder="e.g. Dinner with friends"
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="off-duty">Off duty starting</Label>
-              <Input
-                id="off-duty"
-                type="datetime-local"
-                value={offDutyStart}
-                onChange={(e) => setOffDutyStart(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="back-on-duty">Back on duty</Label>
-              <Input
-                id="back-on-duty"
-                type="datetime-local"
-                value={backOnDuty}
-                onChange={(e) => setBackOnDuty(e.target.value)}
-                required
-              />
+          <div className="space-y-1.5">
+            <Label htmlFor="date">Date</Label>
+            <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Category</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {OFF_CATEGORIES.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() => setCategory(c.value)}
+                  aria-pressed={category === c.value}
+                  className={cn(
+                    "border-border flex items-center justify-between rounded-sm border px-3 py-2 text-sm transition-colors",
+                    category === c.value
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "hover:bg-muted",
+                  )}
+                >
+                  <span>{c.label}</span>
+                  <span className="font-mono text-xs tabular-nums opacity-80">
+                    {formatPoints(weights[c.value])}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
 
-          {preview && (
-            <p className="bg-muted rounded-md p-2 text-sm">
-              {formatDuration(preview.fullDays, preview.hours)}
-              {isPeakPreview &&
-                ` — ${household.peak_multiplier}x peak rate applies (starts in the household's peak window)`}{" "}
-              — banked to {partnerName} {isEdit ? "when re-approved" : "once approved"}.
-            </p>
-          )}
-          {backOnDuty <= offDutyStart && (
-            <p className="text-destructive text-sm">
-              &quot;Back on duty&quot; must be after &quot;Off duty starting&quot;.
-            </p>
-          )}
+          <p className="bg-muted rounded-md p-2 text-sm">
+            {formatPoints(weight)} banked to {partnerName} {isEdit ? "when re-approved" : "once approved"}.
+          </p>
 
           {isEdit && wasApproved && (
             <p className="border-warning bg-warning/10 text-warning rounded-md border p-2 text-sm">
               This request is already approved. Saving changes sends it back to {partnerName} for
-              re-approval, and the banked credit updates only once they approve again.
+              re-approval, and the banked points update only once they approve again.
             </p>
           )}
 
@@ -238,12 +227,7 @@ export function RequestPtoDialog({
 
           <div className="space-y-1.5">
             <Label htmlFor="note">Note (optional)</Label>
-            <Textarea
-              id="note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={2}
-            />
+            <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
           </div>
           <DialogFooter>
             <Button type="submit" disabled={submitting || !valid}>
