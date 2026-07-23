@@ -3,6 +3,7 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { isAdminEmail } from "@/lib/admin";
 import { Card, CardContent } from "@/components/ui/card";
 import { FeedbackRow } from "@/components/admin/feedback-row";
+import { UsersPanel, type AdminUserRow } from "@/components/admin/users-panel";
 
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -25,19 +26,28 @@ export default async function AdminPage() {
 
   const serviceClient = createServiceRoleClient();
 
-  const [{ count: totalUsers }, { data: profiles }, { data: requests }, { data: feedback }, { data: errors }] =
-    await Promise.all([
-      serviceClient.from("profiles").select("id", { count: "exact", head: true }),
-      serviceClient.from("profiles").select("household_id"),
-      serviceClient.from("pto_transactions").select("household_id, created_at"),
-      serviceClient
-        .from("beta_feedback")
-        .select("*")
-        .order("resolved", { ascending: true })
-        .order("created_at", { ascending: false })
-        .limit(100),
-      serviceClient.from("error_logs").select("*").order("created_at", { ascending: false }).limit(50),
-    ]);
+  const [
+    { count: totalUsers },
+    { data: profiles },
+    { data: households },
+    { data: authUsers },
+    { data: requests },
+    { data: feedback },
+    { data: errors },
+  ] = await Promise.all([
+    serviceClient.from("profiles").select("id", { count: "exact", head: true }),
+    serviceClient.from("profiles").select("id, display_name, household_id"),
+    serviceClient.from("households").select("id, partner_mode, manual_partner_name"),
+    serviceClient.auth.admin.listUsers({ perPage: 200 }).then((r) => ({ data: r.data.users })),
+    serviceClient.from("pto_transactions").select("household_id, created_at"),
+    serviceClient
+      .from("beta_feedback")
+      .select("*")
+      .order("resolved", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(100),
+    serviceClient.from("error_logs").select("*").order("created_at", { ascending: false }).limit(50),
+  ]);
 
   // A household is "paired" once it has two profiles in it.
   const householdMemberCounts = new Map<string, number>();
@@ -65,6 +75,36 @@ export default async function AdminPage() {
   const feedbackList = feedback ?? [];
   const unresolvedCount = feedbackList.filter((f) => !f.resolved).length;
 
+  const householdsById = new Map((households ?? []).map((h) => [h.id, h]));
+  const profilesByHousehold = new Map<string, NonNullable<typeof profiles>>();
+  for (const p of profiles ?? []) {
+    if (!p.household_id) continue;
+    const arr = profilesByHousehold.get(p.household_id) ?? [];
+    arr.push(p);
+    profilesByHousehold.set(p.household_id, arr);
+  }
+  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+  const userRows: AdminUserRow[] = (authUsers ?? [])
+    .map((au) => {
+      const profile = profileById.get(au.id);
+      const householdId = profile?.household_id ?? null;
+      const household = householdId ? householdsById.get(householdId) : undefined;
+      const members = householdId ? (profilesByHousehold.get(householdId) ?? []) : [];
+      const partner = members.find((m) => m.id !== au.id);
+      return {
+        id: au.id,
+        email: au.email ?? null,
+        displayName: profile?.display_name ?? null,
+        householdId,
+        partnerMode: household?.partner_mode ?? null,
+        manualPartnerName: household?.manual_partner_name ?? null,
+        memberCount: members.length,
+        partnerLabel: partner ? (partner.display_name ?? null) : null,
+      };
+    })
+    .sort((a, b) => (a.email ?? "").localeCompare(b.email ?? ""));
+
   return (
     <div className="space-y-6">
       <div>
@@ -82,6 +122,15 @@ export default async function AdminPage() {
           <MetricCard label="Total events logged" value={totalRequests} />
           <MetricCard label="Open feedback" value={unresolvedCount} />
         </div>
+      </div>
+
+      <div>
+        <h3 className="label-tag text-muted-foreground mb-2">Users</h3>
+        <p className="text-muted-foreground mb-2 text-xs">
+          Pairing moves someone into another household; it doesn&apos;t migrate their existing
+          balance or history, which stays with the household they left. Delete is permanent.
+        </p>
+        <UsersPanel users={userRows} />
       </div>
 
       <div>

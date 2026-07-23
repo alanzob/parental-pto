@@ -6,8 +6,8 @@ const STEPS = [
   },
   {
     n: "02",
-    title: "Your partner approves",
-    body: "Credit banks to whoever covered, automatically.",
+    title: "Your partner gets theirs",
+    body: "Credit is given to whoever covered, automatically.",
   },
   {
     n: "03",
