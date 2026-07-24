@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { clientIp, isRateLimited } from "@/lib/rate-limit";
+import { MAINTENANCE_MODE } from "@/lib/maintenance";
 
 // Creates the account pre-confirmed via the Admin API (email_confirm: true),
 // so it never touches Supabase's email pipeline at all — sidesteps both the
@@ -12,6 +13,10 @@ import { clientIp, isRateLimited } from "@/lib/rate-limit";
 // signup rate limiting — nothing else stood between this endpoint and
 // someone scripting unlimited account creation, hence the rate limit below.
 export async function POST(request: Request) {
+  if (MAINTENANCE_MODE) {
+    return NextResponse.json({ error: "MyTO is paused right now." }, { status: 503 });
+  }
+
   const ip = clientIp(request);
   if (isRateLimited(`signup:${ip}`, 5, 60 * 60 * 1000)) {
     return NextResponse.json(
