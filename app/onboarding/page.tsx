@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { lookupInvitePreview } from "@/lib/invite";
 import { OnboardingForm } from "./onboarding-form";
 
 export default async function OnboardingPage({
@@ -23,5 +24,7 @@ export default async function OnboardingPage({
 
   if (profile?.household_id) redirect("/dashboard");
 
-  return <OnboardingForm initialCode={code} />;
+  const invite = code ? await lookupInvitePreview(code) : null;
+
+  return <OnboardingForm initialCode={code} invite={invite} />;
 }
