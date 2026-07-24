@@ -25,11 +25,12 @@ function toDateStr(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** Credited points for any request, single-day or trip. */
+/** Credited points for any request, single-day, trip, or custom. */
 export function weightOfRequest(r: DemoRequest): number {
   if (r.category === "trip" && r.departurePeriod && r.returnPeriod && r.endDate) {
     return tripWeight(DEFAULT_WEIGHTS, toDateStr(r.date), r.departurePeriod, toDateStr(r.endDate), r.returnPeriod);
   }
+  if (r.category === "custom") return r.customWeight ?? 0;
   return weightOf(r.category as OffCategory);
 }
 
@@ -43,7 +44,7 @@ export type DemoRequest = {
   /** ISO datetime on the request's start date (at the category's/departure
    * period's window start). */
   date: string;
-  category: OffCategory | "trip";
+  category: OffCategory | "trip" | "custom";
   status: "pending" | "approved" | "denied" | "cancelled";
   /** Set for instances generated from one recurring series; undefined for one-offs. */
   seriesId?: string;
@@ -52,4 +53,6 @@ export type DemoRequest = {
   endDate?: string;
   departurePeriod?: TripPeriod;
   returnPeriod?: TripPeriod;
+  /** Only set when category = 'custom' — the user's own point value. */
+  customWeight?: number;
 };

@@ -16,17 +16,22 @@ const CLICK_WINDOW_MS = 2500;
 type NewRequestInput = {
   title: string;
   date: string;
-  category: OffCategory | "trip";
+  category: OffCategory | "trip" | "custom";
   endDate?: string;
   departurePeriod?: TripPeriod;
   returnPeriod?: TripPeriod;
+  customWeight?: number;
 };
+
+function windowCategory(input: NewRequestInput): OffCategory {
+  return input.category === "custom" ? "day" : (input.category as OffCategory);
+}
 
 function requestWindow(input: NewRequestInput): { start: Date; end: Date } {
   if (input.category === "trip" && input.endDate && input.departurePeriod && input.returnPeriod) {
     return tripWindow(input.date, input.departurePeriod, input.endDate, input.returnPeriod);
   }
-  return categoryWindow(input.date, input.category as OffCategory);
+  return categoryWindow(input.date, windowCategory(input));
 }
 
 type DemoContextValue = {
@@ -119,6 +124,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         ...(input.category === "trip"
           ? { endDate: end.toISOString(), departurePeriod: input.departurePeriod, returnPeriod: input.returnPeriod }
           : {}),
+        ...(input.category === "custom" ? { customWeight: input.customWeight } : {}),
       };
       setRequests((prev) => [newRequest, ...prev]);
     },
@@ -129,7 +135,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
     (input: NewRequestInput, frequency: Frequency, endsBy: string) => {
       const seriesId = crypto.randomUUID();
       const creditedTo = otherPerson(persona);
-      const firstStart = categoryWindow(input.date, input.category as OffCategory).start;
+      const firstStart = categoryWindow(input.date, windowCategory(input)).start;
       const starts = occurrenceStarts(firstStart, new Date(endsBy), frequency);
       const createdAt = new Date().toISOString();
       const instances: DemoRequest[] = starts.map((off) => ({
@@ -142,6 +148,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
         status: "pending",
         seriesId,
         createdAt,
+        ...(input.category === "custom" ? { customWeight: input.customWeight } : {}),
       }));
       setRequests((prev) => [...instances, ...prev]);
     },
@@ -198,7 +205,8 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
           r.date !== start.toISOString() ||
           r.endDate !== (input.category === "trip" ? end.toISOString() : undefined) ||
           r.departurePeriod !== input.departurePeriod ||
-          r.returnPeriod !== input.returnPeriod;
+          r.returnPeriod !== input.returnPeriod ||
+          r.customWeight !== (input.category === "custom" ? input.customWeight : undefined);
         return {
           ...r,
           title: input.title,
@@ -207,6 +215,7 @@ export function DemoProvider({ children }: { children: React.ReactNode }) {
           endDate: input.category === "trip" ? end.toISOString() : undefined,
           departurePeriod: input.category === "trip" ? input.departurePeriod : undefined,
           returnPeriod: input.category === "trip" ? input.returnPeriod : undefined,
+          customWeight: input.category === "custom" ? input.customWeight : undefined,
           status: contentChanged && r.status === "approved" ? ("pending" as const) : r.status,
         };
       }),

@@ -57,8 +57,11 @@ export function NewRequestDialog({
   const [endDate, setEndDate] = useState(
     editing?.endDate ? toDateInput(editing.endDate) : editing ? toDateInput(editing.date) : toDateInput(new Date()),
   );
-  const [category, setCategory] = useState<OffCategory>(
-    editingIsTrip ? "evening" : ((editing?.category as OffCategory) ?? "evening"),
+  const [category, setCategory] = useState<OffCategory | "custom">(
+    editingIsTrip ? "evening" : ((editing?.category as OffCategory | "custom") ?? "evening"),
+  );
+  const [customWeight, setCustomWeight] = useState(
+    editing?.customWeight != null ? String(editing.customWeight) : "1",
   );
   const [departurePeriod, setDeparturePeriod] = useState<TripPeriod>(editing?.departurePeriod ?? "evening");
   const [returnPeriod, setReturnPeriod] = useState<TripPeriod>(editing?.returnPeriod ?? "evening");
@@ -70,19 +73,29 @@ export function NewRequestDialog({
   });
 
   const isTrip = endDate > date;
-  const valid = title.trim().length > 0 && !!date && !!endDate && endDate >= date;
+  const isCustom = !isTrip && category === "custom";
+  const customWeightNumber = parseFloat(customWeight);
+  const windowCategory: OffCategory = category === "custom" ? "day" : category;
+  const valid =
+    title.trim().length > 0 &&
+    !!date &&
+    !!endDate &&
+    endDate >= date &&
+    (!isCustom || (customWeightNumber > 0 && Number.isFinite(customWeightNumber)));
   const wasApproved = editing?.status === "approved";
   const partnerName = DEMO_PEOPLE[otherPerson(persona)].name;
 
   const weight = useMemo(() => {
     if (isTrip) return tripWeight(DEFAULT_WEIGHTS, date, departurePeriod, endDate, returnPeriod);
+    if (category === "custom") return customWeightNumber > 0 ? customWeightNumber : 0;
     return DEFAULT_WEIGHTS[category];
-  }, [isTrip, date, endDate, departurePeriod, returnPeriod, category]);
+  }, [isTrip, date, endDate, departurePeriod, returnPeriod, category, customWeightNumber]);
 
   const occurrenceCount = useMemo(() => {
     if (isTrip || frequency === "none" || !valid) return 1;
-    return occurrenceStarts(categoryWindow(date, category).start, new Date(endsBy), frequency).length;
-  }, [isTrip, frequency, endsBy, date, category, valid]);
+    return occurrenceStarts(categoryWindow(date, windowCategory).start, new Date(endsBy), frequency)
+      .length;
+  }, [isTrip, frequency, endsBy, date, windowCategory, valid]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,10 +103,11 @@ export function NewRequestDialog({
     const input = {
       title: title.trim(),
       date,
-      category: (isTrip ? "trip" : category) as OffCategory | "trip",
+      category: (isTrip ? "trip" : category) as OffCategory | "trip" | "custom",
       endDate: isTrip ? endDate : undefined,
       departurePeriod: isTrip ? departurePeriod : undefined,
       returnPeriod: isTrip ? returnPeriod : undefined,
+      customWeight: isCustom ? customWeightNumber : undefined,
     };
     if (isEdit && editing) {
       editRequest(editing.id, input);
@@ -228,7 +242,36 @@ export function NewRequestDialog({
                     </span>
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => setCategory("custom")}
+                  aria-pressed={category === "custom"}
+                  className={cn(
+                    "border-border col-span-2 flex items-center justify-between rounded-sm border px-3 py-2 text-sm transition-colors",
+                    category === "custom"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "hover:bg-muted",
+                  )}
+                >
+                  <span>Custom — name your own</span>
+                  <span className="font-mono text-xs tabular-nums opacity-80">e.g. golfing</span>
+                </button>
               </div>
+              {isCustom && (
+                <div className="space-y-1.5 pt-1">
+                  <Label htmlFor="demo-custom-weight">Credits for this</Label>
+                  <Input
+                    id="demo-custom-weight"
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    value={customWeight}
+                    onChange={(e) => setCustomWeight(e.target.value)}
+                    placeholder="e.g. 1.5"
+                    required
+                  />
+                </div>
+              )}
             </div>
           )}
 

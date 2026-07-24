@@ -28,7 +28,8 @@ export function CalendarHeatmap() {
           result.push({ date: new Date(y, m - 1, d), category: t.category, person });
         }
       } else {
-        result.push({ date: new Date(r.date), category: r.category as OffCategory, person });
+        const band: OffCategory = r.category === "custom" ? "day" : (r.category as OffCategory);
+        result.push({ date: new Date(r.date), category: band, person });
       }
     }
     return result;

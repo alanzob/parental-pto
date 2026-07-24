@@ -67,8 +67,9 @@ export type PtoTransaction = {
   transaction_type: "request";
   title: string;
   /** null on legacy pre-0008 rows; every new request has one. 'trip' means
-   * a multi-day span — see departure_period/return_period. */
-  category: import("@/lib/pto/categories").OffCategory | "trip" | null;
+   * a multi-day span — see departure_period/return_period. 'custom' means a
+   * self-described entry with its own point value — see custom_weight. */
+  category: import("@/lib/pto/categories").OffCategory | "trip" | "custom" | null;
   base_hours: number;
   multiplier: number;
   /** The credited amount, now in points (the category weight). */
@@ -80,6 +81,10 @@ export type PtoTransaction = {
   /** Set together, only when category = 'trip'. */
   departure_period: import("@/lib/pto/trip").TripPeriod | null;
   return_period: import("@/lib/pto/trip").TripPeriod | null;
+  /** The user-chosen point value, only when category = 'custom' — equal to
+   * final_cost at creation, kept separately so editing can tell "custom" and
+   * "picked a preset that happens to weigh the same" apart. */
+  custom_weight: number | null;
   occurred_at: string;
   created_at: string;
 };

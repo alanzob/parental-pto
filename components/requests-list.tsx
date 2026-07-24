@@ -64,7 +64,13 @@ export function RequestsList({
       <CardContent className="divide-y p-0">
         {requests.map((r) => {
           const trip = tripSummary(r);
-          const cat = r.category && r.category !== "trip" ? categoryLabel(r.category as OffCategory) : "My Time";
+          const cat = !r.category
+            ? "My Time"
+            : r.category === "trip"
+              ? "My Time"
+              : r.category === "custom"
+                ? "Custom"
+                : categoryLabel(r.category as OffCategory);
           const canRespond = r.status === "pending" && r.user_id === me.id;
           // In a manual household there's only one real member, so they
           // manage every request — including ones logged on the manual

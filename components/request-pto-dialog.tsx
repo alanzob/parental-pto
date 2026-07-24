@@ -54,11 +54,12 @@ export function weightsFromHousehold(h: Household): CategoryWeights {
 export type RequestDialogInitial = {
   title: string;
   date: string; // yyyy-mm-dd — start date for a trip
-  category: OffCategory | "trip";
+  category: OffCategory | "trip" | "custom";
   note: string;
   endDate?: string;
   departurePeriod?: TripPeriod;
   returnPeriod?: TripPeriod;
+  customWeight?: number | null;
 };
 
 export function RequestPtoDialog({
@@ -79,7 +80,7 @@ export function RequestPtoDialog({
     title: string;
     offDutyStart: string;
     backOnDuty: string;
-    category: OffCategory | "trip";
+    category: OffCategory | "trip" | "custom";
     departurePeriod: TripPeriod | null;
     returnPeriod: TripPeriod | null;
     /** Plain start/end calendar dates (yyyy-mm-dd) for a trip — the
@@ -89,6 +90,8 @@ export function RequestPtoDialog({
      * browser that built the timestamp in the first place. */
     departureDate: string | null;
     returnDate: string | null;
+    /** Only set when category = 'custom' — the user's own point value. */
+    customWeight: number | null;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
@@ -105,8 +108,11 @@ export function RequestPtoDialog({
   const [title, setTitle] = useState(initial?.title ?? "");
   const [date, setDate] = useState(initial?.date ?? toDateInput(new Date()));
   const [endDate, setEndDate] = useState(initial?.endDate ?? initial?.date ?? toDateInput(new Date()));
-  const [category, setCategory] = useState<OffCategory>(
-    initialIsTrip ? "evening" : ((initial?.category as OffCategory) ?? "evening"),
+  const [category, setCategory] = useState<OffCategory | "custom">(
+    initialIsTrip ? "evening" : ((initial?.category as OffCategory | "custom") ?? "evening"),
+  );
+  const [customWeight, setCustomWeight] = useState(
+    initial?.customWeight != null ? String(initial.customWeight) : "1",
   );
   const [departurePeriod, setDeparturePeriod] = useState<TripPeriod>(
     initial?.departurePeriod ?? "evening",
@@ -123,18 +129,28 @@ export function RequestPtoDialog({
   const [submitting, setSubmitting] = useState(false);
 
   const isTrip = endDate > date;
-  const valid = title.trim().length > 0 && !!date && !!endDate && endDate >= date;
+  const isCustom = !isTrip && category === "custom";
+  const customWeightNumber = parseFloat(customWeight);
+  const windowCategory: OffCategory = category === "custom" ? "day" : category;
+  const valid =
+    title.trim().length > 0 &&
+    !!date &&
+    !!endDate &&
+    endDate >= date &&
+    (!isCustom || (customWeightNumber > 0 && Number.isFinite(customWeightNumber)));
   const isManual = household.partner_mode === "manual";
 
   const weight = useMemo(() => {
     if (isTrip) return tripWeight(weights, date, departurePeriod, endDate, returnPeriod);
+    if (category === "custom") return customWeightNumber > 0 ? customWeightNumber : 0;
     return weights[category];
-  }, [isTrip, date, endDate, departurePeriod, returnPeriod, category, weights]);
+  }, [isTrip, date, endDate, departurePeriod, returnPeriod, category, weights, customWeightNumber]);
 
   const occurrenceCount = useMemo(() => {
     if (isTrip || frequency === "none" || !valid) return 1;
-    return occurrenceStarts(categoryWindow(date, category).start, new Date(endsBy), frequency).length;
-  }, [isTrip, frequency, endsBy, date, category, valid]);
+    return occurrenceStarts(categoryWindow(date, windowCategory).start, new Date(endsBy), frequency)
+      .length;
+  }, [isTrip, frequency, endsBy, date, windowCategory, valid]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -142,12 +158,13 @@ export function RequestPtoDialog({
     setSubmitting(true);
     const { start, end } = isTrip
       ? tripWindow(date, departurePeriod, endDate, returnPeriod)
-      : categoryWindow(date, category);
+      : categoryWindow(date, windowCategory);
     const ok = await onSubmit({
       title: title.trim(),
       offDutyStart: start.toISOString(),
       backOnDuty: end.toISOString(),
       category: isTrip ? "trip" : category,
+      customWeight: isCustom ? customWeightNumber : null,
       departurePeriod: isTrip ? departurePeriod : null,
       returnPeriod: isTrip ? returnPeriod : null,
       departureDate: isTrip ? date : null,
@@ -321,7 +338,36 @@ export function RequestPtoDialog({
                     </span>
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => setCategory("custom")}
+                  aria-pressed={category === "custom"}
+                  className={cn(
+                    "border-border col-span-2 flex items-center justify-between rounded-sm border px-3 py-2 text-sm transition-colors",
+                    category === "custom"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "hover:bg-muted",
+                  )}
+                >
+                  <span>Custom — name your own</span>
+                  <span className="font-mono text-xs tabular-nums opacity-80">e.g. golfing</span>
+                </button>
               </div>
+              {isCustom && (
+                <div className="space-y-1.5 pt-1">
+                  <Label htmlFor="custom-weight">Credits for this</Label>
+                  <Input
+                    id="custom-weight"
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    value={customWeight}
+                    onChange={(e) => setCustomWeight(e.target.value)}
+                    placeholder="e.g. 1.5"
+                    required
+                  />
+                </div>
+              )}
             </div>
           )}
 

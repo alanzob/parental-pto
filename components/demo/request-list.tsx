@@ -70,7 +70,8 @@ export function RequestList() {
                       </>
                     ) : (
                       <>
-                        {DEMO_PEOPLE[r.requestedBy].name} · {categoryLabel(r.category as OffCategory)} ·{" "}
+                        {DEMO_PEOPLE[r.requestedBy].name} ·{" "}
+                        {r.category === "custom" ? "Custom" : categoryLabel(r.category as OffCategory)} ·{" "}
                         {fmtDate(r.date)} · {formatPoints(weightOfRequest(r))} banked to{" "}
                         {DEMO_PEOPLE[r.creditedTo].name}
                       </>

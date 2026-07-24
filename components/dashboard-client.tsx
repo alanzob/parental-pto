@@ -79,7 +79,10 @@ export function DashboardClient({
           entries.push({ date: new Date(y, m - 1, d), category: t.category, person });
         }
       } else {
-        entries.push({ date: new Date(r.occurred_at), category: r.category as OffCategory, person });
+        // 'custom' has no fixed daily window of its own — render it like a
+        // full day off, same as the calendar/ICS placement it was given.
+        const band: OffCategory = r.category === "custom" ? "day" : (r.category as OffCategory);
+        entries.push({ date: new Date(r.occurred_at), category: band, person });
       }
     }
     return entries;
@@ -177,11 +180,12 @@ export function DashboardClient({
     title: string;
     offDutyStart: string;
     backOnDuty: string;
-    category: OffCategory | "trip";
+    category: OffCategory | "trip" | "custom";
     departurePeriod: TripPeriod | null;
     returnPeriod: TripPeriod | null;
     departureDate: string | null;
     returnDate: string | null;
+    customWeight: number | null;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
@@ -197,6 +201,7 @@ export function DashboardClient({
         p_ends_by: new Date(`${input.endsBy}T23:59:59`).toISOString(),
         p_note: input.note || null,
         p_for_partner: input.forPartner,
+        p_custom_weight: input.customWeight,
       });
       if (error) {
         toast.error(friendlyRpcError(error.message));
@@ -225,6 +230,7 @@ export function DashboardClient({
       p_return_period: input.returnPeriod,
       p_departure_date: input.departureDate,
       p_return_date: input.returnDate,
+      p_custom_weight: input.customWeight,
     });
     if (error) {
       toast.error(friendlyRpcError(error.message));
@@ -260,11 +266,12 @@ export function DashboardClient({
     title: string;
     offDutyStart: string;
     backOnDuty: string;
-    category: OffCategory | "trip";
+    category: OffCategory | "trip" | "custom";
     departurePeriod: TripPeriod | null;
     returnPeriod: TripPeriod | null;
     departureDate: string | null;
     returnDate: string | null;
+    customWeight: number | null;
     note: string;
     frequency: Frequency;
     endsBy: string | null;
@@ -283,6 +290,7 @@ export function DashboardClient({
       p_return_period: input.returnPeriod,
       p_departure_date: input.departureDate,
       p_return_date: input.returnDate,
+      p_custom_weight: input.customWeight,
     });
     if (error) {
       toast.error(friendlyRpcError(error.message));
@@ -498,9 +506,10 @@ export function DashboardClient({
             endDate: toDateInputLocal(
               new Date(new Date(editing.occurred_at).getTime() + editing.base_hours * 60 * 60 * 1000),
             ),
-            category: (editing.category ?? "evening") as OffCategory | "trip",
+            category: (editing.category ?? "evening") as OffCategory | "trip" | "custom",
             departurePeriod: editing.departure_period ?? undefined,
             returnPeriod: editing.return_period ?? undefined,
+            customWeight: editing.custom_weight,
             note: editing.note ?? "",
           }}
           household={household}
