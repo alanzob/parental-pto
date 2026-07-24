@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { email, password } = await request.json();
+  const { email, password, fullName } = await request.json();
 
   if (typeof email !== "string" || typeof password !== "string" || password.length < 6) {
     return NextResponse.json({ error: "Invalid email or password." }, { status: 400 });
@@ -32,6 +32,9 @@ export async function POST(request: Request) {
     email,
     password,
     email_confirm: true,
+    ...(typeof fullName === "string" && fullName.trim()
+      ? { user_metadata: { full_name: fullName.trim() } }
+      : {}),
   });
 
   if (error) {

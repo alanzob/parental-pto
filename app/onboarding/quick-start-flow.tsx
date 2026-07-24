@@ -31,12 +31,27 @@ function toDateInput(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
+/** One-time read of the name/household name collected by the pre-signup
+ * quiz, if they came from there — so onboarding doesn't ask again. */
+function readQuizPrefill(): { name?: string; householdName?: string } {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem("myto-quiz-prefill");
+    if (!raw) return {};
+    window.localStorage.removeItem("myto-quiz-prefill");
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
 export function QuickStartFlow() {
   const supabase = createClient();
 
+  const [prefill] = useState(() => readQuizPrefill());
   const [phase, setPhase] = useState<Phase>("setup");
-  const [householdName, setHouseholdName] = useState("Our Household");
-  const [myName, setMyName] = useState("");
+  const [householdName, setHouseholdName] = useState(prefill.householdName || "Our Household");
+  const [myName, setMyName] = useState(prefill.name || "");
   const [partnerName, setPartnerName] = useState("");
   const [settingUp, setSettingUp] = useState(false);
 
