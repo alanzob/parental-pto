@@ -55,6 +55,14 @@ export function AuthShell({
               <p className="font-heading text-sm italic">My Time</p>
             </div>
           </div>
+
+          <p className="text-muted-foreground hidden text-xs md:block">
+            Built by one dad who needed this —{" "}
+            <Link href="/about" className="hover:text-foreground underline">
+              the story
+            </Link>
+            .
+          </p>
         </aside>
 
         <main className="flex flex-1 items-center justify-center px-6 py-10">

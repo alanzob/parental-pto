@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 type Q1 = "yes" | "no";
-type Q2 = "kids" | "schedules" | "lonely" | "unaware" | "none";
+type Q2 = "kids" | "schedules" | "lonely" | "unaware" | "trip" | "none";
 type Q3 = "week" | "month" | "long";
 
 type Answers = {
@@ -88,6 +88,7 @@ const SCENARIO_INSIGHT: Record<Q2, string> = {
     "Losing touch with people is common, and usually fixable with a little dedicated, guilt-free time — which is exactly what MyTO protects.",
   unaware:
     "That's the big one. MyTO's whole point is making that imbalance visible, so it's a fact you can both see instead of an argument you have to win.",
+  trip: "That's exactly what the trip calculator is for — pick when you leave and when you're back, and it works out fair credit for every partial day, so a weekend away doesn't quietly cost more than it should.",
   none: "Fair enough — MyTO still helps with smaller imbalances; it just keeps things from drifting before they become a bigger deal.",
 };
 
@@ -203,6 +204,7 @@ export function OnboardingQuiz({ onSignInInstead }: { onSignInInstead: () => voi
       { value: "schedules", label: "We work really different schedules" },
       { value: "lonely", label: "I've lost touch with friends / feel isolated" },
       { value: "unaware", label: "My partner doesn't really see how lopsided it's gotten" },
+      { value: "trip", label: "I want to go on a real trip and not feel guilty" },
       { value: "none", label: "None of these, honestly" },
     ];
     return (

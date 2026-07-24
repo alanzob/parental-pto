@@ -88,6 +88,9 @@ export function JoinInvite({ code, invite }: { code: string; invite: InvitePrevi
       <h2 className="font-heading mb-2 text-2xl font-medium text-balance">
         Join {invite.householdName}
       </h2>
+      <p className="font-heading text-muted-foreground mb-4 text-base italic">
+        &ldquo;Let&apos;s give each other a break.&rdquo;
+      </p>
       <p className="text-muted-foreground mb-5 text-sm">
         {invite.inviterName ? `${invite.inviterName} invited` : "You've been invited"} you to
         MyTO — set up your own account and you&apos;ll be paired with{" "}
